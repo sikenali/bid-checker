@@ -24,6 +24,8 @@ const props = withDefaults(defineProps<{
   maxWidth?: number | string;
   /** 面板最大高度（css 字符串），默认 calc(100vh - 40px)，内容不足时自动收缩 */
   height?: string;
+  /** 固定高度模式：height 作为实际高度而非最大高度，窗口尺寸不随内容变化 */
+  fixedHeight?: boolean;
   /** 点击遮罩关闭 */
   closeOnClickOverlay?: boolean;
   /** ESC 关闭 */
@@ -44,6 +46,7 @@ const props = withDefaults(defineProps<{
   width: 560,
   maxWidth: 600,
   height: 'calc(100vh - 40px)',
+  fixedHeight: false,
   closeOnClickOverlay: true,
   closeOnEsc: true,
   showClose: true,
@@ -76,19 +79,38 @@ function onConfirm() {
   if (props.confirmDisabled || props.confirmLoading) return;
   emit('confirm');
 }
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function onKey(ev: KeyboardEvent) {
-  if (ev.key === 'Escape' && props.modelValue && props.closeOnEsc) close();
-}
-// body 滚动锁定（多弹框嵌套时以计数方式处理）
+// body 滚动锁定（模块级计数：多弹框嵌套时互不覆盖）
 let lockCount = 0;
-function lockScroll(lock: boolean) {
+export function lockScroll(lock: boolean) {
   lockCount = Math.max(0, lockCount + (lock ? 1 : -1));
   document.body.style.overflow = lockCount > 0 ? 'hidden' : '';
 }
-watch(() => props.modelValue, v => lockScroll(v), { immediate: false });
-onMounted(() => { if (props.modelValue) lockScroll(true); });
-onUnmounted(() => { if (props.modelValue) lockScroll(false); });
+
+// ESC 关闭栈（模块级：多弹框嵌套时只关闭最上层的可见弹框）。
+// 弹框通常以 v-model 开关而非卸载，故用 watch 同步栈状态，不能只依赖 mount/unmount。
+type EscEntry = { visible: () => boolean; close: () => void };
+let escStack: EscEntry[] = [];
+let escBound = false;
+function onKey(ev: KeyboardEvent) {
+  if (ev.key !== 'Escape') return;
+  for (let i = escStack.length - 1; i >= 0; i--) {
+    if (escStack[i].visible()) { escStack[i].close(); break; }
+  }
+}
+function bindEsc() {
+  if (escBound) return;
+  escBound = true;
+  document.addEventListener('keydown', onKey);
+}
+export function syncEscStack(entry: EscEntry, track: boolean) {
+  const idx = escStack.indexOf(entry);
+  if (track && idx < 0) escStack.push(entry);
+  else if (!track && idx >= 0) escStack.splice(idx, 1);
+}
+export function unregisterEsc(entry: EscEntry) {
+  const idx = escStack.indexOf(entry);
+  if (idx >= 0) escStack.splice(idx, 1);
+}
 </script>
 
 <template>
@@ -97,10 +119,11 @@ onUnmounted(() => { if (props.modelValue) lockScroll(false); });
       <div v-if="modelValue" class="ui-modal-overlay" @click.self="closeOnClickOverlay && close()">
         <div
           class="ui-modal-panel"
+          :class="{ 'is-fixed-height': fixedHeight }"
           :style="{
             width: panelWidth,
             maxWidth: panelMaxWidth,
-            maxHeight: props.height,
+            ...(fixedHeight ? { height: props.height } : { maxHeight: props.height }),
           }"
           role="dialog"
           aria-modal="true"
@@ -171,6 +194,15 @@ onUnmounted(() => { if (props.modelValue) lockScroll(false); });
   padding: 32px 36px;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+}
+/* 固定高度模式：窗口尺寸恒定，表头固定，仅内容区滚动 */
+.ui-modal-panel.is-fixed-height {
+  overflow: hidden;
+}
+.ui-modal-panel.is-fixed-height .ui-modal-body {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 .ui-modal-header {

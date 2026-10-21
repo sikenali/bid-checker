@@ -56,6 +56,7 @@ function selectTab(key: string) {
     width="92vw"
     :max-width="1400"
     height="92vh"
+    :fixed-height="true"
     :show-footer="false"
     :close-on-click-overlay="false"
   >

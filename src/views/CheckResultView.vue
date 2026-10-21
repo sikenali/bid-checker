@@ -2,6 +2,9 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import TopNav from '@/components/layout/TopNav.vue';
+import PageFooter from '@/components/layout/PageFooter.vue';
+import CreditQualificationModal from '@/components/layout/CreditQualificationModal.vue';
+import BiddingSitesModal from '@/components/layout/BiddingSitesModal.vue';
 import Pagination from '@/components/Pagination.vue';
 import { ElMessage, ElMessageBox } from '@/utils/toast';
 import { downloadCheckResultMarkdown, previewFile } from '@/api/check';
@@ -9,6 +12,14 @@ import type { CheckItem, CheckResult } from '@/api/check';
 
 const router = useRouter();
 const result = ref<CheckResult | null>(null);
+const showCreditModal = ref(false);
+const showBiddingModal = ref(false);
+
+const TRUNCATE_LEN = 20;
+function truncate(s: string, max: number = TRUNCATE_LEN): string {
+  if (!s) return '—';
+  return s.length > max ? s.slice(0, max) + '...' : s;
+}
 
 // ── 分类侧栏 ─────────────────────────────────────────────
 const CATEGORIES = [
@@ -64,10 +75,6 @@ const pagedItems = computed(() => {
 });
 
 // ── 操作 ─────────────────────────────────────────────────
-function goBack() {
-  router.push('/upload');
-}
-
 async function handlePreview() {
   if (!result.value?.招标文件?.jobId) {
     ElMessage.warning('无文件可预览');
@@ -205,11 +212,11 @@ const statusColors: Record<string, string> = {
           <div class="title-text">{{ activeCategory === 'all' ? '全部检查项明细' : groupLabels[activeCategory] || '检查项明细' }}</div>
           <div class="title-actions">
             <button class="action-btn" @click="handlePreview">
-              <RiEyeLine class="icon" />
+              <RiEyeLine size="18" />
               预览
             </button>
             <button class="action-btn" @click="handleExport">
-              <RiDownload2Line class="icon" />
+              <RiDownload2Line size="18" />
               导出
             </button>
           </div>
@@ -256,7 +263,7 @@ const statusColors: Record<string, string> = {
                 </td>
                 <td class="col-require">
                   <span class="require-text" :class="{ 'has-source': item.招标原文 }" :title="tipA(item)">
-                    {{ item.招标要求 || '—' }}
+                    {{ truncate(item.招标要求) }}
                   </span>
                 </td>
                 <td class="col-page-a">
@@ -267,20 +274,27 @@ const statusColors: Record<string, string> = {
                 </td>
                 <td class="col-response">
                   <span class="response-text" :class="{ 'has-source': item.投标原文 }" :title="tipB(item)">
-                    {{ item.投标响应 || '—' }}
+                    {{ truncate(item.投标响应) }}
                   </span>
                 </td>
                 <td class="col-status">
-                  <span
-                    class="status-dot"
-                    :style="{ backgroundColor: statusColors[item.status] }"
-                  >
+                  <span class="status-badge" :class="'status-' + item.status">
+                    <svg v-if="item.status === 'pass'" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M3 7L6 10L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <svg v-else-if="item.status === 'warning'" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M7 3V7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                      <circle cx="7" cy="10.5" r="1" fill="currentColor"/>
+                    </svg>
+                    <svg v-else width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M3 3L11 11M11 3L3 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
                     {{ statusLabels[item.status] }}
                   </span>
                 </td>
                 <td class="col-action">
-                  <button class="detail-btn" @click="handleRowDetail(item)">
-                    <RiMore2Line class="icon" />
+                  <button class="detail-btn" @click="handleRowDetail(item)" title="查看原文依据">
+                    <RiMore2Line size="18" />
                   </button>
                 </td>
               </tr>
@@ -298,15 +312,12 @@ const statusColors: Record<string, string> = {
           :current-page="currentPage"
           @update:current-page="currentPage = $event"
         />
-
-        <div class="back-btn-wrap">
-          <button class="back-btn" @click="goBack">
-            <RiArrowLeftSLine class="icon" />
-            返回重新上传
-          </button>
-        </div>
       </main>
     </div>
+
+    <PageFooter @credit-query="showCreditModal = true" @bidding-sites="showBiddingModal = true" />
+    <CreditQualificationModal v-model:visible="showCreditModal" />
+    <BiddingSitesModal v-model:visible="showBiddingModal" />
   </div>
 </template>
 
@@ -423,7 +434,7 @@ const statusColors: Record<string, string> = {
   overflow: hidden;
   padding: 24px 32px;
   gap: 20px;
-  max-height: calc(100vh - 72px);
+  max-height: calc(100vh - 72px - 58px);
 }
 
 /* 标题行 */
@@ -461,9 +472,10 @@ const statusColors: Record<string, string> = {
   background: var(--color-bg-secondary, #F7F3EA);
 }
 .action-btn .icon {
-  font-family: "remixicon", sans-serif;
-  font-style: normal;
-  font-size: 18px;
+  display: inline-flex;
+}
+.action-btn svg {
+  flex-shrink: 0;
 }
 
 /* 统计卡片 */
@@ -597,22 +609,29 @@ const statusColors: Record<string, string> = {
   line-height: 1.5;
   display: block;
 }
-.status-dot {
+.status-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   padding: 4px 12px;
   border-radius: 9999px;
   font-size: 13px;
   font-weight: 500;
   font-family: "SourceHanSans-Medium", var(--font-family-cn);
+  color: #fff;
+  white-space: nowrap;
 }
-.status-dot::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
+.status-badge svg {
+  flex-shrink: 0;
+}
+.status-pass {
+  background: var(--color-success, #4E9B7A);
+}
+.status-warning {
+  background: var(--color-warning, #F39C12);
+}
+.status-risk {
+  background: var(--color-error, #C0392B);
 }
 .detail-btn {
   width: 32px;
@@ -631,45 +650,13 @@ const statusColors: Record<string, string> = {
   background: var(--color-bg-secondary, #F7F3EA);
   color: var(--color-text-body, #3A3A3A);
 }
-.detail-btn .icon {
-  font-family: "remixicon", sans-serif;
-  font-style: normal;
-  font-size: 18px;
+.detail-btn svg {
+  flex-shrink: 0;
 }
 .empty-cell {
   text-align: center;
   color: var(--color-text-faint, #A7A296);
   font-size: 14px;
   padding: 48px 0 !important;
-}
-
-/* 返回按钮 */
-.back-btn-wrap {
-  display: flex;
-  justify-content: center;
-  padding-top: 8px;
-}
-.back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 24px;
-  height: 46px;
-  border: 0.7px solid var(--color-border, #E5DFD3);
-  border-radius: 12px;
-  background: var(--color-bg-white, #fff);
-  font-size: 15px;
-  color: var(--color-text-body, #3A3A3A);
-  cursor: pointer;
-  font-family: "SourceHanSans-Medium", var(--font-family-cn);
-  transition: all 0.2s;
-}
-.back-btn:hover {
-  background: var(--color-bg-secondary, #F7F3EA);
-}
-.back-btn .icon {
-  font-family: "remixicon", sans-serif;
-  font-style: normal;
-  font-size: 18px;
 }
 </style>

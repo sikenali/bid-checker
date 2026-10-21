@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { ElMessage, ElMessageBox } from '@/utils/toast';
+import { ElMessage } from '@/utils/toast';
 import apiClient from '@/api/client';
 import { UiSwitch, UiInput, UiTip } from '@/components/ui';
 import RuleDialog from '@/components/settings/RuleDialog.vue';
@@ -162,7 +162,7 @@ async function confirmDelete() {
 }
 
 const categoryBadge = (cat: string) => {
-  if (cat === 'keyword') return { label: '关键字', icon: 'ri-tag-line' };
+  if (cat === 'keyword') return { label: '关键字', icon: 'ri-price-tag-line' };
   return { label: '正则', icon: 'ri-code-s-slash-line' };
 };
 

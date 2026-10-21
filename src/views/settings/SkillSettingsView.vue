@@ -41,6 +41,11 @@ watch(viewMode, (v) => {
   try { localStorage.setItem('settings.skill.viewMode', v); } catch {}
 });
 const searchTerm = ref('');
+
+function truncateDesc(s: string, max: number = 60): string {
+  if (!s) return '';
+  return s.length > max ? s.slice(0, max) + '...' : s;
+}
 const showEditDialog = ref(false);
 const editingSkill = ref<SkillItem | null>(null);
 const editName = ref('');
@@ -302,9 +307,9 @@ onMounted(loadSkills);
                   <span class="row-name">{{ skill.name }}</span>
                   <span class="row-group">{{ groupLabels[skill.group] || skill.group }}</span>
                 </td>
-                <td class="col-desc">
-                  <span class="row-desc">{{ skill.description }}</span>
-                </td>
+<td class="col-desc">
+  <span class="row-desc" :title="skill.description">{{ truncateDesc(skill.description) }}</span>
+</td>
                 <td class="col-action">
                   <div class="row-actions" @click.stop>
                     <button class="action-btn edit" @click="openEdit(skill)">修改</button>
@@ -379,7 +384,7 @@ onMounted(loadSkills);
             <div class="grid-card-body">
               <div class="grid-card-icon">{{ groupLabels[skill.group] || skill.group }}</div>
               <div class="grid-card-title">{{ skill.name }}</div>
-              <div class="grid-card-desc">{{ skill.description }}</div>
+              <div class="grid-card-desc" :title="skill.description">{{ skill.description }}</div>
             </div>
             <div class="grid-card-footer">
               <div class="grid-card-actions">
@@ -629,7 +634,7 @@ onMounted(loadSkills);
 /* 列表视图 */
 .list-container { background-color: var(--color-bg-white, #FFFFFF); border: 0.7px solid var(--color-border-soft, #EDE9E0); border-radius: 16px; overflow: hidden; }
 .table-card { background: var(--color-bg-white, #fff); }
-.list-table { width: 100%; border-collapse: collapse; }
+.list-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .list-table thead { background-color: var(--color-bg-secondary, #F7F3EA); }
 .list-table th {
   text-align: left; font-size: 15px; font-weight: 400; color: var(--color-text-secondary, #6E6A60);
@@ -639,9 +644,9 @@ onMounted(loadSkills);
 .list-table td { padding: 0 40px; height: 76px; vertical-align: middle; border-bottom: 0.7px solid var(--color-border-soft, #EDE9E0); cursor: pointer; transition: background 0.15s; }
 .list-table td:last-child { text-align: right; }
 .list-table .list-row:hover td { background: var(--color-bg-card, #FCFBF8); }
-.col-name { width: 430px; flex-shrink: 0; }
-.col-desc { flex: 1; }
-.col-action { width: 260px; flex-shrink: 0; }
+.col-name { width: 35%; }
+.col-desc { width: 40%; }
+.col-action { width: 25%; }
 .row-name {
   display: block; font-size: 16px; font-weight: 500; color: var(--color-text-primary, #1F1D1A);
   font-family: "SourceHanSans-Medium", var(--font-family-cn);
@@ -650,7 +655,11 @@ onMounted(loadSkills);
   display: block; font-size: 12px; color: var(--color-text-muted, #8A8578); margin-top: 2px;
   font-family: "SourceHanSans-Regular", var(--font-family-cn);
 }
-.row-desc { font-size: 15px; color: var(--color-text-secondary, #6E6A60); font-family: "SourceHanSans-Regular", var(--font-family-cn); }
+.row-desc {
+  font-size: 15px; color: var(--color-text-secondary, #6E6A60);
+  font-family: "SourceHanSans-Regular", var(--font-family-cn);
+  display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .row-actions { display: flex; align-items: center; justify-content: flex-end; gap: 24px; }
 
 /* 操作按钮 */
@@ -798,7 +807,11 @@ onMounted(loadSkills);
   font-family: "SourceHanSans-Regular", var(--font-family-cn); width: fit-content;
 }
 .grid-card-title { font-size: 17px; font-weight: 500; color: var(--color-text-primary, #1F1D1A); font-family: "SourceHanSans-Medium", var(--font-family-cn); margin: 0; }
-.grid-card-desc { font-size: 14px; color: var(--color-text-secondary, #6E6A60); font-family: "SourceHanSans-Regular", var(--font-family-cn); flex: 1; }
+.grid-card-desc {
+  font-size: 14px; color: var(--color-text-secondary, #6E6A60);
+  font-family: "SourceHanSans-Regular", var(--font-family-cn); flex: 1;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
 .grid-card-footer { padding: 16px 24px; border-top: 1px solid var(--color-border-soft, #EDE9E0); display: flex; justify-content: flex-end; }
 .grid-card-actions { display: flex; align-items: center; gap: 12px; }
 .grid-card-actions .action-btn {
