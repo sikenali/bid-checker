@@ -2,7 +2,7 @@
   <footer class="page-footer">
     <!-- 左侧：logo + 文字 -->
     <div class="footer-brand">
-      <RiTargetLine class="tool-logo" />
+      <RiTargetLine size="20" color="var(--color-primary, #C0392B)" />
       <span class="footer-brand-text">回旋标工具系列</span>
     </div>
 
@@ -10,12 +10,12 @@
     <div class="footer-actions">
       <UiTip text="企业信用" placement="top">
         <div class="footer-icon-btn" @click="$emit('credit-query')">
-          <RiShieldCheckLine class="footer-mark" />
+          <RiShieldCheckLine size="14" />
         </div>
       </UiTip>
       <UiTip text="招标网站" placement="top">
         <div class="footer-icon-btn" @click="$emit('bidding-sites')">
-          <RiLinksLine class="footer-mark" />
+          <RiLinksLine size="14" />
         </div>
       </UiTip>
     </div>
@@ -53,14 +53,6 @@ onMounted(() => { year.value = new Date().getFullYear() })
   align-items: center;
   gap: 10px;
 }
-.tool-logo {
-  font-family: "remixicon", sans-serif;
-  font-style: normal;
-  font-size: 20px;
-  line-height: 1;
-  color: var(--color-primary, #C0392B);
-  flex-shrink: 0;
-}
 .footer-brand-text {
   font-size: 14px;
   font-weight: 500;
@@ -95,13 +87,6 @@ onMounted(() => { year.value = new Date().getFullYear() })
   color: #fff;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary, #C0392B) 30%, transparent);
-}
-.footer-mark {
-  font-family: "remixicon", sans-serif;
-  font-style: normal;
-  font-size: 14px;
-  color: inherit;
-  transition: transform 0.25s ease;
 }
 
 /* 右侧版权 */
