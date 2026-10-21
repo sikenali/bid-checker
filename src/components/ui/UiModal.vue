@@ -1,3 +1,38 @@
+<script lang="ts">
+// 模块级状态：所有 UiModal 实例共享
+let lockCount = 0;
+export function lockScroll(lock: boolean) {
+  lockCount = Math.max(0, lockCount + (lock ? 1 : -1));
+  document.body.style.overflow = lockCount > 0 ? 'hidden' : '';
+}
+
+// ESC 关闭栈：多弹框嵌套时只关闭最上层的可见弹框。
+// 弹框通常以 v-model 开关而非卸载，故由实例用 watch 同步栈状态，不能只依赖 mount/unmount。
+export type EscEntry = { visible: () => boolean; close: () => void };
+let escStack: EscEntry[] = [];
+let escBound = false;
+function onKey(ev: KeyboardEvent) {
+  if (ev.key !== 'Escape') return;
+  for (let i = escStack.length - 1; i >= 0; i--) {
+    if (escStack[i].visible()) { escStack[i].close(); break; }
+  }
+}
+export function bindEsc() {
+  if (escBound) return;
+  escBound = true;
+  document.addEventListener('keydown', onKey);
+}
+export function syncEscStack(entry: EscEntry, track: boolean) {
+  const idx = escStack.indexOf(entry);
+  if (track && idx < 0) escStack.push(entry);
+  else if (!track && idx >= 0) escStack.splice(idx, 1);
+}
+export function unregisterEsc(entry: EscEntry) {
+  const idx = escStack.indexOf(entry);
+  if (idx >= 0) escStack.splice(idx, 1);
+}
+</script>
+
 <script setup lang="ts">
 /**
  * UiModal — 统一弹框壳（对齐信用查询平台弹框，仅 width 可调）
@@ -79,38 +114,24 @@ function onConfirm() {
   if (props.confirmDisabled || props.confirmLoading) return;
   emit('confirm');
 }
-// body 滚动锁定（模块级计数：多弹框嵌套时互不覆盖）
-let lockCount = 0;
-export function lockScroll(lock: boolean) {
-  lockCount = Math.max(0, lockCount + (lock ? 1 : -1));
-  document.body.style.overflow = lockCount > 0 ? 'hidden' : '';
-}
-
-// ESC 关闭栈（模块级：多弹框嵌套时只关闭最上层的可见弹框）。
-// 弹框通常以 v-model 开关而非卸载，故用 watch 同步栈状态，不能只依赖 mount/unmount。
-type EscEntry = { visible: () => boolean; close: () => void };
-let escStack: EscEntry[] = [];
-let escBound = false;
-function onKey(ev: KeyboardEvent) {
-  if (ev.key !== 'Escape') return;
-  for (let i = escStack.length - 1; i >= 0; i--) {
-    if (escStack[i].visible()) { escStack[i].close(); break; }
-  }
-}
-function bindEsc() {
-  if (escBound) return;
-  escBound = true;
-  document.addEventListener('keydown', onKey);
-}
-export function syncEscStack(entry: EscEntry, track: boolean) {
-  const idx = escStack.indexOf(entry);
-  if (track && idx < 0) escStack.push(entry);
-  else if (!track && idx >= 0) escStack.splice(idx, 1);
-}
-export function unregisterEsc(entry: EscEntry) {
-  const idx = escStack.indexOf(entry);
-  if (idx >= 0) escStack.splice(idx, 1);
-}
+const escEntry: EscEntry = {
+  visible: () => props.modelValue,
+  close: () => { if (props.modelValue) close(); },
+};
+watch(() => props.modelValue, v => lockScroll(v), { immediate: false });
+watch(
+  () => [props.modelValue, props.closeOnEsc] as const,
+  () => syncEscStack(escEntry, props.closeOnEsc && props.modelValue),
+);
+bindEsc();
+onMounted(() => {
+  if (props.modelValue) lockScroll(true);
+  syncEscStack(escEntry, props.closeOnEsc && props.modelValue);
+});
+onUnmounted(() => {
+  unregisterEsc(escEntry);
+  if (props.modelValue) lockScroll(false);
+});
 </script>
 
 <template>
