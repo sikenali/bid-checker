@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import TopNav from '@/components/layout/TopNav.vue';
+import Pagination from '@/components/Pagination.vue';
 import { ElMessage } from '@/utils/toast';
 import { downloadCheckResultMarkdown, previewFile } from '@/api/check';
 
@@ -86,16 +87,11 @@ onMounted(() => {
 // ── 分页 ─────────────────────────────────────────────────
 const PAGE_SIZE = 10;
 const currentPage = ref(1);
-const totalPages = computed(() => Math.ceil(filteredItems.value.length / PAGE_SIZE));
 
 const pagedItems = computed(() => {
   const start = (currentPage.value - 1) * PAGE_SIZE;
   return filteredItems.value.slice(start, start + PAGE_SIZE);
 });
-
-function goToPage(page: number) {
-  if (page >= 1 && page <= totalPages.value) currentPage.value = page;
-}
 
 // ── 操作 ─────────────────────────────────────────────────
 function goBack() {
@@ -277,26 +273,12 @@ const statusColors: Record<string, string> = {
         </div>
 
         <!-- 分页 -->
-        <div v-if="totalPages > 1" class="pagination">
-          <span class="page-info">共 {{ filteredItems.length }} 条 · 每页 {{ PAGE_SIZE }} 条 · 第 {{ currentPage }} / {{ totalPages }} 页</span>
-          <div class="page-controls">
-            <button class="page-btn" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">
-              <RiArrowLeftSLine class="icon" />
-            </button>
-            <button
-              v-for="p in totalPages"
-              :key="p"
-              class="page-btn"
-              :class="{ active: currentPage === p }"
-              @click="goToPage(p)"
-            >
-              {{ p }}
-            </button>
-            <button class="page-btn" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">
-              <RiArrowRightSLine class="icon" />
-            </button>
-          </div>
-        </div>
+        <Pagination
+          :total="filteredItems.length"
+          :page-size="PAGE_SIZE"
+          :current-page="currentPage"
+          @update:current-page="currentPage = $event"
+        />
 
         <div class="back-btn-wrap">
           <button class="back-btn" @click="goBack">
@@ -635,55 +617,6 @@ const statusColors: Record<string, string> = {
   color: var(--color-text-faint, #A7A296);
   font-size: 14px;
   padding: 48px 0 !important;
-}
-
-/* 分页 */
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 0;
-}
-.page-info {
-  font-size: 14px;
-  color: var(--color-text-muted, #8A8578);
-  font-family: "SourceHanSans-Regular", var(--font-family-cn);
-}
-.page-controls {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.page-btn {
-  width: 34px;
-  height: 34px;
-  border: none;
-  border-radius: 8px;
-  background: var(--color-bg-card, #FCFBF8);
-  color: var(--color-text-secondary, #6E6A60);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-family: "SourceHanSans-Medium", var(--font-family-cn);
-  transition: all 0.2s;
-}
-.page-btn:hover:not(:disabled) {
-  background: var(--color-bg-secondary, #F7F3EA);
-}
-.page-btn.active {
-  background: var(--color-success, #4E9B7A);
-  color: #fff;
-}
-.page-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.page-btn .icon {
-  font-family: "remixicon", sans-serif;
-  font-style: normal;
-  font-size: 16px;
 }
 
 /* 返回按钮 */

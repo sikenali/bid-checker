@@ -1,12 +1,6 @@
 import apiClient from './client';
 import { uploadFile } from './upload';
 
-export interface CheckConfig {
-  hasLlmSkill: boolean;
-  defaultSkillId?: string;
-  skillName?: string;
-}
-
 export interface CheckItem {
   field: string;
   group: string;
@@ -45,32 +39,25 @@ export function previewFile(jobId: string): void {
   window.open(`/api/upload/file/${encodeURIComponent(jobId)}`, '_blank');
 }
 
-/** 获取 LLM 增强配置：是否存在可用的技能 */
-export async function getCheckConfig(): Promise<CheckConfig> {
-  const res = await apiClient.get<any[]>('/rules/llm-skills');
-  const skills: any[] = res.data || [];
-  const llmSkill = skills.find((s: any) => s.enable === 1 && s.enable_llm === 1);
-  return {
-    hasLlmSkill: !!llmSkill,
-    defaultSkillId: llmSkill?.id,
-    skillName: llmSkill?.skill_name,
-  };
-}
-
-/** 并行上传两个文件并提取结果 */
+/**
+ * 并行上传两个文件并提取结果。
+ * 抽取模式由后端判定：前端不读取技能列表、不传 skill_id，
+ * 后端若已配置模型且启用了技能则自动走 LLM 智能增强，
+ * 实际模式从响应中的 extractMode 读取。
+ */
 export async function runCheck(
   fileA: File,
   fileB: File,
-  skillId?: string,
 ): Promise<{ jobIdA: string; jobIdB: string; mode: 'rule_only' | 'llm_enhanced' }> {
   const [resA, resB] = await Promise.all([
-    uploadFile(fileA, skillId),
-    uploadFile(fileB, skillId),
+    uploadFile(fileA),
+    uploadFile(fileB),
   ]);
+  const enhanced = resA.result.extractMode === 'llm_enhanced' || resB.result.extractMode === 'llm_enhanced';
   return {
     jobIdA: resA.id,
     jobIdB: resB.id,
-    mode: skillId ? 'llm_enhanced' : 'rule_only',
+    mode: enhanced ? 'llm_enhanced' : 'rule_only',
   };
 }
 

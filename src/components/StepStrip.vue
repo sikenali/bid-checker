@@ -74,6 +74,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   (e: 'extract'): void;
+  (e: 'finished'): void;
 }>();
 
 function onExtract() {
@@ -98,6 +99,7 @@ watch(() => props.loading, (val) => {
 });
 
 let animTimer: ReturnType<typeof setTimeout> | null = null;
+let finished = false;
 
 watch(loadingProgress, (val) => {
   if (val < 0 || val >= props.steps.length) return;
@@ -106,6 +108,13 @@ watch(loadingProgress, (val) => {
     loadingProgress.value = val + 1;
     if (loadingProgress.value >= props.steps.length) {
       done.value = true;
+      if (!finished) {
+        finished = true;
+        setTimeout(() => {
+          emit('finished');
+          finished = false;
+        }, 400);
+      }
     }
   }, 650);
 });

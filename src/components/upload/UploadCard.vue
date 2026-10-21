@@ -1,60 +1,58 @@
+<script lang="ts">
+export interface FileInfo {
+  file: File | null;
+  name: string;
+  size: string;
+  type: string;
+}
+</script>
+
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref } from 'vue';
 import { ElMessage } from '@/utils/toast';
-import { uploadFile } from '@/api/upload';
-import StepStrip from '@/components/StepStrip.vue';
-import { UiTip } from '@/components/ui';
-import apiClient from '@/api/client';
 
-interface Step {
-  key: number;
-  label: string;
+interface Props {
+  leftFileInfo: FileInfo;
+  rightFileInfo: FileInfo;
+  leftTitle?: string;
+  rightTitle?: string;
+  leftLabel?: string;
+  rightLabel?: string;
+  disabled?: boolean;
 }
 
-interface LlmSkill {
-  id: string;
-  skill_name: string;
-  skill_code: string;
-  biz_type: string;
-  enable_llm: number;
-}
-
-const props = withDefaults(defineProps<{
-  steps?: Step[];
-  title?: string;
-}>(), {
-  steps: () => [
-    { key: 0, label: '文档解析' },
-    { key: 1, label: '规则抽取' },
-    { key: 2, label: '智能增强' },
-  ],
+const props = withDefaults(defineProps<Props>(), {
+  leftTitle: '点击选择或拖拽招标文件',
+  rightTitle: '点击选择或拖拽投标文件',
+  leftLabel: '招标文件（对照依据）',
+  rightLabel: '投标文件（待检查文件）',
+  disabled: false,
 });
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _props = props;
-
 const emit = defineEmits<{
-  (e: 'success', jobId: string, file: File): void;
+  (e: 'update:leftFileInfo', value: FileInfo): void;
+  (e: 'update:rightFileInfo', value: FileInfo): void;
   (e: 'replace'): void;
 }>();
 
-const uploading = ref(false);
-const isDragging = ref(false);
-const selectedFile = ref<File | null>(null);
-const selectedSkill = ref<string>('');
-const skills = ref<LlmSkill[]>([]);
+const isDraggingLeft = ref(false);
+const isDraggingRight = ref(false);
 
-onMounted(async () => {
-  try {
-    const res = await apiClient.get<any[]>('/rules/llm-skills');
-    skills.value = (res.data || []).filter((s: any) => s.enable_llm === 1);
-  } catch {}
-});
+const MAX_SIZE = 50 * 1024 * 1024;
+
+const formatTags = [
+  { label: 'W', color: '#2B579A' },
+  { label: 'X', color: '#217346' },
+  { label: 'P', color: '#C0392B' },
+  { label: 'PDF', color: '#B03A2E' },
+  { label: 'MD', color: '#4A6FA5' },
+  { label: 'TX', color: '#5A5750' },
+];
 
 function getExt(file: File): string {
   const name = file.name.toLowerCase();
   const i = name.lastIndexOf('.');
-  return i >= 0 ? name.slice(i) : '';
+  return i >= 0 ? name.slice(i + 1) : '';
 }
 
 function formatSize(bytes: number): string {
@@ -66,140 +64,121 @@ function formatSize(bytes: number): string {
 
 function validateFile(file: File): boolean {
   const ext = getExt(file);
-  if (ext === '.doc') {
+  if (ext === 'doc') {
     ElMessage.warning('不支持 .doc 格式，请转换成 Docx 格式后再上传～');
     return false;
   }
-  if (!['.docx', '.pdf', '.md', '.txt', '.xlsx', '.csv', '.html'].includes(ext)) {
-    ElMessage.warning('不支持的格式，请上传招标文件（docx/pdf/md/txt/xlsx/csv/html）');
+  if (!['docx', 'pdf', 'md', 'txt', 'xlsx', 'csv', 'html'].includes(ext)) {
+    ElMessage.warning('不支持的格式，请上传 docx/pdf/md/txt/xlsx/csv/html 文件');
+    return false;
+  }
+  if (file.size > MAX_SIZE) {
+    ElMessage.warning('文件超过 50MB 上限，请压缩后再上传');
     return false;
   }
   return true;
 }
 
-function handleDragOver(e: DragEvent) {
+function handleDragOver(side: 'left' | 'right', e: DragEvent) {
   e.preventDefault();
-  isDragging.value = true;
+  if (props.disabled) return;
+  if (side === 'left') isDraggingLeft.value = true;
+  else isDraggingRight.value = true;
 }
-function handleDragLeave(e: DragEvent) {
-  // 只有当鼠标真正离开卡片区域时才清除高亮，避免子元素触发时误清
+
+function handleDragLeave(side: 'left' | 'right', e: DragEvent) {
   const related = e.relatedTarget as Node | null;
   if (related && (e.currentTarget as HTMLElement).contains(related)) return;
-  isDragging.value = false;
+  if (side === 'left') isDraggingLeft.value = false;
+  else isDraggingRight.value = false;
 }
-function handleDrop(e: DragEvent) {
+
+function handleDrop(side: 'left' | 'right', e: DragEvent) {
   e.preventDefault();
-  isDragging.value = false;
+  if (side === 'left') isDraggingLeft.value = false;
+  else isDraggingRight.value = false;
+
   const files = e.dataTransfer?.files;
-  if (files && files.length > 0 && !uploading.value) {
-    if (validateFile(files[0])) selectFile(files[0]);
+  if (files && files.length > 0 && !props.disabled) {
+    if (validateFile(files[0])) selectFile(side, files[0]);
   }
 }
 
-function triggerFileInput() {
-  (document.getElementById('fileInput') as HTMLInputElement)?.click();
+function triggerFileInput(side: 'left' | 'right') {
+  if (props.disabled) return;
+  const id = side === 'left' ? 'leftFileInput' : 'rightFileInput';
+  (document.getElementById(id) as HTMLInputElement)?.click();
 }
 
-function handleFileSelect(event: Event) {
+function handleFileSelect(side: 'left' | 'right', event: Event) {
   const input = event.target as HTMLInputElement;
-  if (input.files && input.files.length > 0 && !uploading.value) {
-    if (validateFile(input.files[0])) selectFile(input.files[0]);
+  if (input.files && input.files.length > 0 && !props.disabled) {
+    if (validateFile(input.files[0])) selectFile(side, input.files[0]);
     else input.value = '';
   }
 }
 
-function selectFile(file: File) {
-  selectedFile.value = file;
+function selectFile(side: 'left' | 'right', file: File) {
+  const fileInfo: FileInfo = {
+    file,
+    name: file.name,
+    size: formatSize(file.size),
+    type: getExt(file),
+  };
+  if (side === 'left') emit('update:leftFileInfo', fileInfo);
+  else emit('update:rightFileInfo', fileInfo);
 }
 
-function startUpload(file: File) {
-  if (!file || uploading.value) return;
-  uploading.value = true;
-
-  uploadFile(file, selectedSkill.value).then((uploadResult) => {
-    setTimeout(() => {
-      emit('success', uploadResult.id, file);
-    }, 500);
-  }).catch((err: any) => {
-    const msg = err?.response?.data?.error || '上传失败，请重试';
-    ElMessage.error(msg);
-    uploading.value = false;
-    selectedFile.value = null;
-  });
-}
-
-function handleReplace() {
-  if (uploading.value) return;
-  selectedFile.value = null;
-  uploading.value = false;
+function handleReplace(side: 'left' | 'right') {
+  if (props.disabled) return;
+  const empty: FileInfo = { file: null, name: '', size: '', type: '' };
+  if (side === 'left') emit('update:leftFileInfo', empty);
+  else emit('update:rightFileInfo', empty);
   emit('replace');
-}
-
-const btnDisabled = computed(() => uploading.value);
-const btnLabel = computed(() => {
-  if (uploading.value) return '提取中…';
-  return '一键提取';
-});
-
-function handleExtract() {
-  if (uploading.value) return;
-  if (!selectedFile.value) {
-    ElMessage.warning('请先上传文件后再点击提取～');
-    return;
-  }
-  startUpload(selectedFile.value);
 }
 </script>
 
 <template>
-  <div class="upload-wrapper">
+  <div class="upload-card-row">
+    <!-- 左侧：招标文件 -->
     <div
       class="upload-card"
-      :class="{ dragging: isDragging, hasFile: !!selectedFile && !uploading, uploading: uploading }"
-      @dragover="handleDragOver"
-      @dragleave="handleDragLeave"
-      @drop="handleDrop"
-      @click="!uploading && triggerFileInput()"
+      :class="{ dragging: isDraggingLeft, hasFile: !!leftFileInfo.file && !disabled }"
+      @dragover="handleDragOver('left', $event)"
+      @dragleave="handleDragLeave('left', $event)"
+      @drop="handleDrop('left', $event)"
+      @click="!disabled && triggerFileInput('left')"
     >
-      <!-- initial state -->
-      <template v-if="!selectedFile">
+      <template v-if="!leftFileInfo.file">
         <div class="upload-icon-wrap">
-          <RiUploadCloud2Line class="icon" />
+          <RiUploadCloud2Line class="upload-icon" />
         </div>
-        <p class="upload-hint">{{ title || '点击选择或拖拽招标文件到此处上传' }}</p>
+        <p class="upload-hint">{{ leftTitle }}</p>
         <div class="format-row">
-          <span class="fmt fmt-w">W</span>
-          <span class="fmt fmt-x">X</span>
-          <span class="fmt fmt-p">P</span>
-          <span class="fmt fmt-pdf">PDF</span>
-          <span class="fmt fmt-md">MD</span>
-          <span class="fmt fmt-tx">TX</span>
+          <span v-for="tag in formatTags" :key="tag.label" class="fmt" :style="{ backgroundColor: tag.color }">{{ tag.label }}</span>
         </div>
       </template>
 
-      <!-- file selected: centered icon + name + size (kept as-is during upload, animation lives in StepStrip below) -->
       <template v-else>
-        <UiTip text="替换文件" placement="left" class="replace-tip">
-          <button v-if="!uploading" class="replace-icon" @click.stop="handleReplace">
-            <RiRefreshLine class="icon" />
-          </button>
-        </UiTip>
+        <button v-if="!disabled" class="replace-icon" @click.stop="handleReplace('left')" title="替换文件">
+          <RiRefreshLine class="replace-icon-inner" />
+        </button>
         <div class="file-centered">
-          <div class="file-icon" :class="'fmt-' + getExt(selectedFile).replace('.', '')">
-            <svg v-if="getExt(selectedFile) === '.docx'" width="32" height="32" viewBox="0 0 28 28" fill="none">
+          <div class="file-icon" :class="'fmt-' + leftFileInfo.type">
+            <svg v-if="leftFileInfo.type === 'docx'" width="32" height="32" viewBox="0 0 28 28" fill="none">
               <rect x="3" y="2" width="22" height="24" rx="2" stroke="currentColor" stroke-width="1.6"/>
               <path d="M8 9h12M8 13h12M8 17h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
             </svg>
-            <svg v-else-if="getExt(selectedFile) === '.xlsx'" width="32" height="32" viewBox="0 0 28 28" fill="none">
+            <svg v-else-if="leftFileInfo.type === 'xlsx' || leftFileInfo.type === 'csv'" width="32" height="32" viewBox="0 0 28 28" fill="none">
               <rect x="3" y="2" width="22" height="24" rx="2" stroke="currentColor" stroke-width="1.6"/>
               <path d="M8 9h12M8 13h12M8 17h12M14 7v14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
             </svg>
-            <svg v-else-if="getExt(selectedFile) === '.pdf'" width="32" height="32" viewBox="0 0 28 28" fill="none">
+            <svg v-else-if="leftFileInfo.type === 'pdf' || leftFileInfo.type === 'html'" width="32" height="32" viewBox="0 0 28 28" fill="none">
               <rect x="3" y="2" width="22" height="24" rx="2" stroke="currentColor" stroke-width="1.6"/>
               <path d="M9 10l4 3-4 3V10z" fill="currentColor"/>
               <path d="M17 10l4 3-4 3V10z" fill="currentColor" opacity="0.5"/>
             </svg>
-            <svg v-else-if="getExt(selectedFile) === '.md'" width="32" height="32" viewBox="0 0 28 28" fill="none">
+            <svg v-else-if="leftFileInfo.type === 'md'" width="32" height="32" viewBox="0 0 28 28" fill="none">
               <rect x="3" y="2" width="22" height="24" rx="2" stroke="currentColor" stroke-width="1.6"/>
               <text x="8" y="21" font-family="sans-serif" font-size="11" font-weight="700" fill="currentColor">M</text>
             </svg>
@@ -208,57 +187,104 @@ function handleExtract() {
               <path d="M9 9h10M9 13h10M9 17h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
             </svg>
           </div>
-          <p class="file-name">{{ selectedFile.name }}</p>
-          <p class="file-size">{{ formatSize(selectedFile.size) }}</p>
+          <p class="file-name">{{ leftFileInfo.name }}</p>
+          <p class="file-size">{{ leftFileInfo.size }}</p>
         </div>
       </template>
 
       <input
-        id="fileInput"
+        id="leftFileInput"
         type="file"
         class="file-input-hidden"
         accept=".docx,.pdf,.md,.txt,.xlsx,.csv,.html"
-        :disabled="uploading"
-        @change="handleFileSelect"
+        :disabled="disabled"
+        @change="handleFileSelect('left', $event)"
       />
+      <span class="card-label">{{ leftLabel }}</span>
     </div>
 
-    <!-- 技能选择器 -->
-    <div class="skill-selector" v-if="skills.length > 0 && !uploading">
-      <label class="skill-label">
-        <RiBrainLine class="icon" />
-        选择抽取技能：
-      </label>
-      <select v-model="selectedSkill" class="skill-select">
-        <option value="">默认技能（纯规则抽取）</option>
-        <option v-for="skill in skills" :key="skill.id" :value="skill.id">
-          {{ skill.skill_name }}
-        </option>
-      </select>
+    <!-- VS 标识 -->
+    <div class="vs-badge">
+      <span>VS</span>
     </div>
 
-    <StepStrip
-      :steps="steps"
-      :loading="uploading"
-      :button-label="btnLabel"
-      :disabled="btnDisabled"
-      @extract="handleExtract"
-    />
+    <!-- 右侧：投标文件 -->
+    <div
+      class="upload-card"
+      :class="{ dragging: isDraggingRight, hasFile: !!rightFileInfo.file && !disabled }"
+      @dragover="handleDragOver('right', $event)"
+      @dragleave="handleDragLeave('right', $event)"
+      @drop="handleDrop('right', $event)"
+      @click="!disabled && triggerFileInput('right')"
+    >
+      <template v-if="!rightFileInfo.file">
+        <div class="upload-icon-wrap">
+          <RiUploadCloud2Line class="upload-icon" />
+        </div>
+        <p class="upload-hint">{{ rightTitle }}</p>
+        <div class="format-row">
+          <span v-for="tag in formatTags" :key="tag.label" class="fmt" :style="{ backgroundColor: tag.color }">{{ tag.label }}</span>
+        </div>
+      </template>
+
+      <template v-else>
+        <button v-if="!disabled" class="replace-icon" @click.stop="handleReplace('right')" title="替换文件">
+          <RiRefreshLine class="replace-icon-inner" />
+        </button>
+        <div class="file-centered">
+          <div class="file-icon" :class="'fmt-' + rightFileInfo.type">
+            <svg v-if="rightFileInfo.type === 'docx'" width="32" height="32" viewBox="0 0 28 28" fill="none">
+              <rect x="3" y="2" width="22" height="24" rx="2" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M8 9h12M8 13h12M8 17h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            <svg v-else-if="rightFileInfo.type === 'xlsx' || rightFileInfo.type === 'csv'" width="32" height="32" viewBox="0 0 28 28" fill="none">
+              <rect x="3" y="2" width="22" height="24" rx="2" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M8 9h12M8 13h12M8 17h12M14 7v14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+            <svg v-else-if="rightFileInfo.type === 'pdf' || rightFileInfo.type === 'html'" width="32" height="32" viewBox="0 0 28 28" fill="none">
+              <rect x="3" y="2" width="22" height="24" rx="2" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M9 10l4 3-4 3V10z" fill="currentColor"/>
+              <path d="M17 10l4 3-4 3V10z" fill="currentColor" opacity="0.5"/>
+            </svg>
+            <svg v-else-if="rightFileInfo.type === 'md'" width="32" height="32" viewBox="0 0 28 28" fill="none">
+              <rect x="3" y="2" width="22" height="24" rx="2" stroke="currentColor" stroke-width="1.6"/>
+              <text x="8" y="21" font-family="sans-serif" font-size="11" font-weight="700" fill="currentColor">M</text>
+            </svg>
+            <svg v-else width="32" height="32" viewBox="0 0 28 28" fill="none">
+              <rect x="3" y="2" width="22" height="24" rx="2" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M9 9h10M9 13h10M9 17h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <p class="file-name">{{ rightFileInfo.name }}</p>
+          <p class="file-size">{{ rightFileInfo.size }}</p>
+        </div>
+      </template>
+
+      <input
+        id="rightFileInput"
+        type="file"
+        class="file-input-hidden"
+        accept=".docx,.pdf,.md,.txt,.xlsx,.csv,.html"
+        :disabled="disabled"
+        @change="handleFileSelect('right', $event)"
+      />
+      <span class="card-label">{{ rightLabel }}</span>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.upload-wrapper {
+.upload-card-row {
   display: flex;
-  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  gap: 40px;
   width: 100%;
 }
 
-/* ── upload card ────────────────────────────────────── */
 .upload-card {
-  width: min(875px, calc(100vw - 64px));
-  height: 345px;
+  width: 520px;
+  height: 420px;
   flex-shrink: 0;
   background-color: var(--color-bg-white, #FFFFFF);
   border: 0.7px solid var(--color-border, #E5DFD3);
@@ -267,83 +293,76 @@ function handleExtract() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.2s, background-color 0.2s;
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
   position: relative;
   overflow: hidden;
-  gap: 20px;
-  padding: 40px 32px;
-  margin-bottom: 24px;
+  gap: 24px;
+  padding: 48px 36px;
+  cursor: pointer;
 }
+
 .upload-card.dragging {
   border-color: var(--color-primary, #C0392B);
   background-color: var(--color-primary-soft, #FBE9E7);
 }
+
 .upload-card.hasFile {
   cursor: default;
 }
-.upload-card.uploading {
-  cursor: default;
-}
 
-/* initial state */
 .upload-icon-wrap {
-  width: 80px;
-  height: 80px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
   background-color: var(--color-bg-secondary, #F7F3EA);
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.upload-icon-wrap .icon {
-  font-family: "remixicon", sans-serif;
-  font-style: normal;
-  font-size: 34px;
+
+.upload-icon {
+  font-size: 40px;
   color: var(--color-text-muted, #8A8578);
 }
+
 .upload-hint {
   margin: 0;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 500;
   color: var(--color-text-primary, #1F1D1A);
   font-family: "SourceHanSans-Medium", var(--font-family-cn);
   line-height: 1.2;
   text-align: center;
 }
+
 .format-row {
   display: flex;
   align-items: center;
   gap: 12px;
+  margin-top: 8px;
 }
+
 .fmt {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   color: #fff;
+  font-size: 10px;
   font-family: "SourceHanSans-Bold", var(--font-family-cn);
   line-height: 1;
 }
-.fmt-w   { background-color: #2B579A; font-size: 11px; }
-.fmt-x   { background-color: #217346; font-size: 11px; }
-.fmt-p   { background-color: var(--color-primary, #C0392B); font-size: 11px; }
-.fmt-pdf { background-color: #B03A2E; font-size: 9px; }
-.fmt-md  { background-color: #4A6FA5; font-size: 9px; }
-.fmt-tx  { background-color: #5A5750; font-size: 9px; }
 
-/* ── file selected state: centered icon + name + size ── */
-.replace-tip {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 2;
-}
+/* Replace icon */
 .replace-icon {
-  width: 36px;
-  height: 36px;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: 0.7px solid var(--color-border, #E5DFD3);
   background-color: var(--color-bg-white, #FFFFFF);
@@ -352,22 +371,30 @@ function handleExtract() {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s, border-color 0.2s, background-color 0.2s, transform 0.2s;
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+  z-index: 2;
 }
+
 .replace-icon:hover {
   color: var(--color-primary, #C0392B);
   border-color: var(--color-primary, #C0392B);
   background-color: var(--color-primary-soft, #FBE9E7);
 }
-.replace-icon:hover .icon {
-  transform: rotate(120deg);
+[data-theme="dark"] .replace-icon:hover {
+  color: #FFFFFF;
+  border-color: #FFFFFF;
 }
-.replace-icon .icon {
-  font-family: "remixicon", sans-serif;
-  font-style: normal;
-  font-size: 18px;
+
+.replace-icon-inner {
+  font-size: 16px;
   transition: transform 0.3s ease;
 }
+
+.replace-icon:hover .replace-icon-inner {
+  transform: rotate(120deg);
+}
+
+/* File selected state */
 .file-centered {
   display: flex;
   flex-direction: column;
@@ -376,6 +403,7 @@ function handleExtract() {
   width: 100%;
   text-align: center;
 }
+
 .file-icon {
   width: 60px;
   height: 60px;
@@ -385,11 +413,13 @@ function handleExtract() {
   justify-content: center;
   flex-shrink: 0;
 }
-.file-icon.fmt-docx                      { background-color: #2B579A; color: #fff; }
-.file-icon.fmt-xlsx, .file-icon.fmt-csv   { background-color: #217346; color: #fff; }
-.file-icon.fmt-pdf, .file-icon.fmt-html   { background-color: var(--color-primary, #C0392B); color: #fff; }
-.file-icon.fmt-md                     { background-color: #4A6FA5; color: #fff; }
-.file-icon.fmt-txt                    { background-color: #5A5750; color: #fff; }
+
+.file-icon.fmt-docx { background-color: #2B579A; color: #fff; }
+.file-icon.fmt-xlsx, .file-icon.fmt-csv { background-color: #217346; color: #fff; }
+.file-icon.fmt-pdf, .file-icon.fmt-html { background-color: var(--color-primary, #C0392B); color: #fff; }
+.file-icon.fmt-md { background-color: #4A6FA5; color: #fff; }
+.file-icon.fmt-txt { background-color: #5A5750; color: #fff; }
+
 .file-name {
   margin: 0;
   font-size: 16px;
@@ -401,6 +431,7 @@ function handleExtract() {
   text-overflow: ellipsis;
   max-width: 100%;
 }
+
 .file-size {
   margin: 0;
   font-size: 14px;
@@ -410,51 +441,55 @@ function handleExtract() {
 
 .file-input-hidden { display: none; }
 
-/* ── 技能选择器 ── */
-.skill-selector {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 12px 20px;
-  background: var(--color-bg-white, #fff);
-  border: 0.7px solid var(--color-border-soft, #EDE9E0);
-  border-radius: 10px;
-  width: min(875px, calc(100vw - 64px));
+.card-label {
+  position: absolute;
+  bottom: 14px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-text-muted, #8A8578);
+  font-family: "SourceHanSans-Regular", var(--font-family-cn);
 }
 
-.skill-label {
+/* VS badge */
+.vs-badge {
+  width: 80px;
+  height: 80px;
+  background: var(--color-bg-white, #FFFFFF);
+  border: 0.7px solid var(--color-border, #E5DFD3);
+  border-radius: 9999px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 14px;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.vs-badge span {
+  font-size: 18px;
+  font-weight: 600;
   color: var(--color-text-secondary, #6E6A60);
-  font-family: "SourceHanSans-Regular", var(--font-family-cn);
-  white-space: nowrap;
+  font-family: "SourceHanSans-Medium", var(--font-family-cn);
 }
 
-.skill-label .icon {
-  font-family: "remixicon", sans-serif;
-  font-style: normal;
-  font-size: 16px;
-  color: var(--color-info, #4A72A8);
+/* Responsive */
+@media (max-width: 1200px) {
+  .upload-card-row {
+    flex-direction: column;
+  }
+  .vs-badge {
+    transform: rotate(90deg);
+  }
+  .upload-card {
+    width: 100%;
+    max-width: 560px;
+  }
 }
 
-.skill-select {
-  flex: 1;
-  height: 38px;
-  padding: 0 12px;
-  border: 1px solid var(--color-border, #E5DFD3);
-  border-radius: 8px;
-  background: var(--color-bg-white, #fff);
-  font-size: 14px;
-  color: var(--color-text-body, #3A3A3A);
-  font-family: "SourceHanSans-Regular", var(--font-family-cn);
-  outline: none;
-  cursor: pointer;
-}
-
-.skill-select:focus {
-  border-color: var(--color-primary, #C0392B);
+@media (max-width: 640px) {
+  .upload-card {
+    height: 320px;
+    width: 100%;
+  }
 }
 </style>

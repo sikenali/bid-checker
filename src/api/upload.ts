@@ -30,6 +30,8 @@ export interface UploadResult {
     fieldGroups?: Record<string, string>;
     pageCount?: number;
     paraToPage?: number[];
+    extractMode?: 'rule_only' | 'llm_enhanced';
+    extractResult?: Record<string, unknown>;
     error?: string;
   };
 }
@@ -53,16 +55,15 @@ export interface ParseStatus {
     fieldGroups?: Record<string, string>;
     pageCount?: number;
     paraToPage?: number[];
+    extractMode?: 'rule_only' | 'llm_enhanced';
+    extractResult?: Record<string, unknown>;
     error?: string;
   };
 }
 
-export async function uploadFile(file: File, skillId?: string): Promise<UploadResult> {
+export async function uploadFile(file: File): Promise<UploadResult> {
   const formData = new FormData();
   formData.append('file', file);
-  if (skillId) {
-    formData.append('skill_id', skillId);
-  }
   const response = await apiClient.post<UploadResult>('/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     // 大文件同步解析 + LLM 增强耗时较长，单独放宽超时（全局默认 60s）

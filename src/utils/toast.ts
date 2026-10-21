@@ -70,23 +70,23 @@ export const ElMessage = {
 };
 
 export const ElMessageBox = {
-  async confirm(message: string, title: string = '确认'): Promise<any> {
+  async confirm(message: string, title: string = '确认'): Promise<void> {
     return new Promise((resolve, reject) => {
       const overlay = document.createElement('div');
       overlay.style.cssText = 'position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;';
       const box = document.createElement('div');
-      box.style.cssText = 'background:#fff;border-radius:12px;padding:24px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);font-family:"SourceHanSans-Regular","Noto Sans SC",sans-serif;';
+      box.style.cssText = 'background:var(--color-bg-white, #fff);border-radius:12px;padding:24px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);font-family:"SourceHanSans-Regular","Noto Sans SC",sans-serif;';
       box.innerHTML = `
-        <div style="font-size:16px;font-weight:500;color:#1F1D1A;margin-bottom:12px;">${title}</div>
-        <div style="font-size:14px;color:#3A3A3A;line-height:1.6;margin-bottom:24px;">${message}</div>
+        <div style="font-size:16px;font-weight:500;color:var(--color-text-primary, #1F1D1A);margin-bottom:12px;">${title}</div>
+        <div style="font-size:14px;color:var(--color-text-body, #3A3A3A);line-height:1.6;margin-bottom:24px;">${message}</div>
         <div style="display:flex;gap:12px;justify-content:flex-end;">
-          <button id="__cancel_btn" style="padding:8px 20px;border:1px solid #E5DFD3;background:#fff;color:#3A3A3A;border-radius:8px;font-size:14px;cursor:pointer;">取消</button>
-          <button id="__confirm_btn" style="padding:8px 20px;border:none;background:#BE3B2E;color:#fff;border-radius:8px;font-size:14px;cursor:pointer;">确认</button>
+          <button id="__cancel_btn" style="padding:8px 20px;border:1px solid var(--color-border, #E5DFD3);background:var(--color-bg-white, #fff);color:var(--color-text-body, #3A3A3A);border-radius:8px;font-size:14px;cursor:pointer;">取消</button>
+          <button id="__confirm_btn" style="padding:8px 20px;border:none;background:var(--color-primary, #BE3B2E);color:#fff;border-radius:8px;font-size:14px;cursor:pointer;">确认</button>
         </div>`;
       overlay.appendChild(box);
       document.body.appendChild(overlay);
       box.querySelector('#__cancel_btn')!.addEventListener('click', () => { overlay.remove(); reject(new Error('cancel')); });
-      box.querySelector('#__confirm_btn')!.addEventListener('click', () => { overlay.remove(); resolve('confirm'); });
+      box.querySelector('#__confirm_btn')!.addEventListener('click', () => { overlay.remove(); resolve(); });
       overlay.addEventListener('click', (e: Event) => { if ((e as MouseEvent).target === overlay) { overlay.remove(); reject(new Error('cancel')); } });
     });
   },
