@@ -9,6 +9,12 @@ export interface CheckItem {
   所在页投: string;
   投标响应: string;
   status: 'pass' | 'warning' | 'risk';
+  /** 招标文件中该字段所在的原始段落，供鼠标悬停查看依据 */
+  招标原文?: string;
+  投标原文?: string;
+  /** 招标/投标文件中该字段所属章节 */
+  招标章节?: string;
+  投标章节?: string;
 }
 
 export interface CheckResult {
@@ -44,20 +50,33 @@ export function previewFile(jobId: string): void {
  * 抽取模式由后端判定：前端不读取技能列表、不传 skill_id，
  * 后端若已配置模型且启用了技能则自动走 LLM 智能增强，
  * 实际模式从响应中的 extractMode 读取。
+ *
+ * 上传接口本身已返回完整提取结果，这里一并带出，避免再请求一次状态接口。
  */
 export async function runCheck(
   fileA: File,
   fileB: File,
-): Promise<{ jobIdA: string; jobIdB: string; mode: 'rule_only' | 'llm_enhanced' }> {
+): Promise<{
+  jobIdA: string;
+  jobIdB: string;
+  mode: 'rule_only' | 'llm_enhanced';
+  resultA: any;
+  resultB: any;
+  warnings: string[];
+}> {
   const [resA, resB] = await Promise.all([
     uploadFile(fileA),
     uploadFile(fileB),
   ]);
-  const enhanced = resA.result.extractMode === 'llm_enhanced' || resB.result.extractMode === 'llm_enhanced';
+  const enhanced =
+    resA.result.extractMode === 'llm_enhanced' || resB.result.extractMode === 'llm_enhanced';
   return {
     jobIdA: resA.id,
     jobIdB: resB.id,
     mode: enhanced ? 'llm_enhanced' : 'rule_only',
+    resultA: resA.result,
+    resultB: resB.result,
+    warnings: [...(resA.warnings || []), ...(resB.warnings || [])],
   };
 }
 
@@ -79,18 +98,25 @@ export function buildCheckResult(
   for (const field of [...allFields].sort()) {
     const valA = extractsA[field]?.value ?? null;
     const valB = extractsB[field]?.value ?? null;
-    const group = fieldGroups[field] || extractsA[field]?.group || 'info';
 
-    let status: 'pass' | 'warning' | 'risk' = 'pass';
-    if (valA !== null && valB !== null) {
-      if (valA !== valB) {
-        // 判断是警告还是风险
-        const isRiskField = ['废标', '否决', '无效', '★', '强制', '必须'].some(k => field.includes(k));
-        status = isRiskField ? 'risk' : 'warning';
-      }
-    } else if (valA !== null || valB !== null) {
-      status = 'warning';
-    }
+    // 两侧都未抽取到内容的字段没有可比性，跳过以免结果被大量空行淹没
+    if (valA === null && valB === null) continue;
+
+    const group = fieldGroups[field] || extractsA[field]?.group || extractsB[field]?.group || 'info';
+
+    // 是否与废标/否决类强约束相关（金额、保证金、资格类条款不响应或不符合即可能被否决）
+    const isRiskField = ['废标', '否决', '无效', '★', '强制', '必须', '保证金', '资格要求'].some(
+      k => field.includes(k),
+    );
+
+    // 两侧都有值但不一致，或仅一侧有值（另一侧未响应），均视为存在差异
+    const differs =
+      (valA !== null && valB !== null && valA !== valB) ||
+      (valA !== null) !== (valB !== null);
+
+    const status: 'pass' | 'warning' | 'risk' = differs
+      ? isRiskField ? 'risk' : 'warning'
+      : 'pass';
 
     items.push({
       field,
@@ -100,6 +126,10 @@ export function buildCheckResult(
       所在页投: extractsB[field]?.page ? `P${extractsB[field].page}` : '',
       投标响应: valB ?? '',
       status,
+      招标原文: extractsA[field]?.sourceText,
+      投标原文: extractsB[field]?.sourceText,
+      招标章节: extractsA[field]?.chapter,
+      投标章节: extractsB[field]?.chapter,
     });
   }
 

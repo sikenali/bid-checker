@@ -37,7 +37,7 @@ function showToast(message: string, type: ToastType = 'info', duration = 2500) {
     <span style="flex-shrink:0;width:3px;height:20px;border-radius:2px;background:${accentColors[type]};"></span>
     <span class="toast-msg">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
     <button class="toast-close-btn" style="flex-shrink:0;width:20px;height:20px;border:none;border-radius:9999px;background:transparent;color:var(--color-text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;" aria-label="关闭">
-      <span style="font-family:remixicon;font-style:normal;font-size:12px;">&#xea4c;</span>
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
     </button>
   `;
   const closeBtn = el.querySelector('.toast-close-btn');

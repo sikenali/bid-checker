@@ -18,6 +18,8 @@ export interface UploadResult {
   id: string;
   filename: string;
   size: number;
+  status: string;
+  warnings?: string[];
   result: {
     status: string;
     text?: string;

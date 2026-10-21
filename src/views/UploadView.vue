@@ -8,7 +8,6 @@ import StepStrip from '@/components/StepStrip.vue';
 import CreditQualificationModal from '@/components/layout/CreditQualificationModal.vue';
 import BiddingSitesModal from '@/components/layout/BiddingSitesModal.vue';
 import { runCheck, buildCheckResult } from '@/api/check';
-import { getParseStatus } from '@/api/upload';
 
 const router = useRouter();
 const showCreditModal = ref(false);
@@ -42,9 +41,9 @@ function waitStepStrip(): Promise<void> {
 }
 
 const steps = [
-  { key: 0, label: '文档解析' },
-  { key: 1, label: '规则抽取' },
-  { key: 2, label: '智能增强' },
+  { key: 0, label: '解析文件' },
+  { key: 1, label: '提取文件' },
+  { key: 2, label: '校验对比' },
 ];
 
 // ── 开始智能检查：是否走 LLM 增强由后端判定 ──────────────────────
@@ -57,19 +56,14 @@ async function handleCheck() {
   checkError.value = '';
 
   try {
-    const { jobIdA, jobIdB, mode } = await runCheck(
+    const { jobIdA, jobIdB, mode, resultA, resultB } = await runCheck(
       leftFileInfo.value.file,
       rightFileInfo.value.file,
     );
 
-    const [resA, resB] = await Promise.all([
-      getParseStatus(jobIdA),
-      getParseStatus(jobIdB),
-    ]);
-
     const result = buildCheckResult(
-      resA.result,
-      resB.result,
+      resultA,
+      resultB,
       leftFileInfo.value.name,
       rightFileInfo.value.name,
       mode,
@@ -106,7 +100,7 @@ function handleReplace() {}
         <StepStrip
           :steps="steps"
           :loading="checking"
-          button-label="开始智能检查"
+          button-label="一键检查"
           :disabled="!bothReady"
           @extract="handleCheck"
           @finished="onStepStripFinished"

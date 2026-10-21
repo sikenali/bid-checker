@@ -3,27 +3,9 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import TopNav from '@/components/layout/TopNav.vue';
 import Pagination from '@/components/Pagination.vue';
-import { ElMessage } from '@/utils/toast';
+import { ElMessage, ElMessageBox } from '@/utils/toast';
 import { downloadCheckResultMarkdown, previewFile } from '@/api/check';
-
-interface CheckItem {
-  field: string;
-  group: string;
-  招标要求: string;
-  所在页招: string;
-  所在页投: string;
-  投标响应: string;
-  status: 'pass' | 'warning' | 'risk';
-}
-
-interface CheckResult {
-  招标文件: { filename: string; jobId: string };
-  投标文件: { filename: string; jobId: string };
-  mode: 'rule_only' | 'llm_enhanced';
-  items: CheckItem[];
-  summary: { total: number; pass: number; warning: number; risk: number };
-  checkTime: string;
-}
+import type { CheckItem, CheckResult } from '@/api/check';
 
 const router = useRouter();
 const result = ref<CheckResult | null>(null);
@@ -36,6 +18,7 @@ const CATEGORIES = [
   { key: 'tech', label: '一致性检查', count: 0, color: '#C6A45C' },
   { key: 'score', label: '遗漏项检查', count: 0, color: '#8A8578' },
   { key: 'seal', label: '响应性检查', count: 0, color: '#8A8578' },
+  { key: 'star', label: '标星条款', count: 0, color: '#E74C3C' },
 ];
 
 const activeCategory = ref('all');
@@ -46,34 +29,21 @@ const filteredItems = computed(() =>
     : result.value?.items.filter(i => i.group === activeCategory.value) ?? [],
 );
 
-const groupedItems = computed(() => {
-  if (!result.value) return {};
-  const map: Record<string, CheckItem[]> = {};
-  for (const item of result.value.items) {
-    const g = item.group || 'info';
-    if (!map[g]) map[g] = [];
-    map[g].push(item);
-  }
-  return map;
-});
-
 // 更新分类计数
 onMounted(() => {
   try {
     const raw = sessionStorage.getItem('bidchecker.checkResult');
     if (raw) {
       result.value = JSON.parse(raw) as CheckResult;
-      // 计算各类别数量
+      // 计算各类别数量（按 key 匹配，新增分类无需改索引）
       const counts: Record<string, number> = {};
       for (const item of result.value.items) {
         const g = item.group || 'info';
         counts[g] = (counts[g] || 0) + 1;
       }
-      CATEGORIES[1].count = counts['info'] || 0;
-      CATEGORIES[2].count = counts['business'] || 0;
-      CATEGORIES[3].count = counts['tech'] || 0;
-      CATEGORIES[4].count = counts['score'] || 0;
-      CATEGORIES[5].count = counts['seal'] || 0;
+      for (const cat of CATEGORIES) {
+        if (cat.key !== 'all') cat.count = counts[cat.key] || 0;
+      }
     } else {
       ElMessage.warning('暂无检查结果，请先上传文件进行检查');
       router.replace('/upload');
@@ -123,8 +93,53 @@ async function handleExport() {
   }
 }
 
-function handleRowDetail(_item: CheckItem) {
-  ElMessage.info('详情功能开发中');
+function handleRowDetail(item: CheckItem) {
+  const hasEvidence = item.招标原文 || item.投标原文;
+  if (!hasEvidence) {
+    ElMessage.info('该检查项无原文依据');
+    return;
+  }
+  const rows: Array<[string, string]> = [];
+  if (item.招标原文) rows.push(['招标文件原文', item.招标原文]);
+  if (item.招标章节) rows.push(['所在章节', item.招标章节]);
+  if (item.投标原文) rows.push(['投标文件原文', item.投标原文]);
+  if (item.投标章节) rows.push(['投标章节', item.投标章节]);
+
+  const body = rows
+    .map(
+      ([k, v]) =>
+        `<div style="margin-top:10px;"><div style="font-size:12px;color:#8A8578;margin-bottom:4px;">${escapeHtml(k)}</div><div style="font-size:13px;color:#1F1D1A;line-height:1.7;background:#F7F4EF;border-radius:8px;padding:10px 12px;">${escapeHtml(v)}</div></div>`,
+    )
+    .join('');
+
+  ElMessageBox.confirm(
+    `<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;"><span style="font-weight:600;">${escapeHtml(item.field)}</span><span style="font-size:12px;padding:2px 10px;border-radius:99px;color:#fff;background:${statusColors[item.status]};">${statusLabels[item.status]}</span></div>${body}`,
+    '原文依据',
+  ).catch(() => {});
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+}
+
+/** 招标文件原文提示 */
+function tipA(item: CheckItem): string {
+  if (!item.招标原文) return item.所在页招 || '';
+  return `${item.所在页招 ? item.所在页招 + '\n' : ''}${item.招标原文}`;
+}
+
+/** 投标文件原文提示 */
+function tipB(item: CheckItem): string {
+  if (!item.投标原文) return item.投标响应 || '';
+  return `${item.所在页投 ? item.所在页投 + '\n' : ''}${item.投标原文}`;
+}
+
+function chapterA(item: CheckItem): string {
+  return item.招标章节 ? `所在章节：${item.招标章节}` : item.所在页招;
+}
+
+function chapterB(item: CheckItem): string {
+  return item.投标章节 ? `所在章节：${item.投标章节}` : item.所在页投;
 }
 
 const groupLabels: Record<string, string> = {
@@ -240,16 +255,20 @@ const statusColors: Record<string, string> = {
                   <span class="field-name">{{ item.field }}</span>
                 </td>
                 <td class="col-require">
-                  <span class="require-text">{{ item.招标要求 || '—' }}</span>
+                  <span class="require-text" :class="{ 'has-source': item.招标原文 }" :title="tipA(item)">
+                    {{ item.招标要求 || '—' }}
+                  </span>
                 </td>
                 <td class="col-page-a">
-                  <span class="page-tag">{{ item.所在页招 || '—' }}</span>
+                  <span class="page-tag" :class="{ 'has-source': item.招标章节 }" :title="chapterA(item)">{{ item.所在页招 || '—' }}</span>
                 </td>
                 <td class="col-page-b">
-                  <span class="page-tag">{{ item.所在页投 || '—' }}</span>
+                  <span class="page-tag" :class="{ 'has-source': item.投标章节 }" :title="chapterB(item)">{{ item.所在页投 || '—' }}</span>
                 </td>
                 <td class="col-response">
-                  <span class="response-text">{{ item.投标响应 || '—' }}</span>
+                  <span class="response-text" :class="{ 'has-source': item.投标原文 }" :title="tipB(item)">
+                    {{ item.投标响应 || '—' }}
+                  </span>
                 </td>
                 <td class="col-status">
                   <span
@@ -557,6 +576,11 @@ const statusColors: Record<string, string> = {
   color: var(--color-text-body, #3A3A3A);
   line-height: 1.5;
   display: block;
+}
+/* 有原文依据时提示可悬停查看 */
+.has-source {
+  cursor: help;
+  border-bottom: 1px dashed var(--color-border, #E5DFD3);
 }
 .page-tag {
   display: inline-block;
