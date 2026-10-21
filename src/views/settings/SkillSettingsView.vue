@@ -218,10 +218,10 @@ onMounted(loadSkills);
             <span class="sep">/</span>
             <span>设置中心</span>
             <span class="sep">/</span>
-            <span class="current">技能管理</span>
+            <span class="current">技能设置</span>
           </div>
           <div class="header-title">
-            <h1>技能管理</h1>
+            <h1>技能设置</h1>
             <p>导入或同步能力插件，控制各技能在创作流程中的启用状态</p>
           </div>
         </div>

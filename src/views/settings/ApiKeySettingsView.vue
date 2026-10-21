@@ -235,10 +235,10 @@ onMounted(loadKeys);
             <span class="sep">/</span>
             <span>设置中心</span>
             <span class="sep">/</span>
-            <span class="current">模型管理</span>
+            <span class="current">模型设置</span>
           </div>
           <div class="header-title">
-            <h1>模型管理</h1>
+            <h1>模型设置</h1>
             <p>配置 AI 大模型服务商与 API Key 连接</p>
           </div>
         </div>

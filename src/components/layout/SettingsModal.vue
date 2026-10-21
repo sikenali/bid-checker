@@ -3,9 +3,7 @@ import { ref, computed, watch } from 'vue';
 import { UiModal } from '@/components/ui';
 import { riToCompName } from '@/utils/icon';
 import ThemeSettingsView from '@/views/settings/ThemeSettingsView.vue';
-import TemplateSettingsView from '@/views/settings/TemplateSettingsView.vue';
 import SkillSettingsView from '@/views/settings/SkillSettingsView.vue';
-import RuleSettingsView from '@/views/settings/RuleSettingsView.vue';
 import ApiKeySettingsView from '@/views/settings/ApiKeySettingsView.vue';
 import ExportSettingsView from '@/views/settings/ExportSettingsView.vue';
 import ProfileSettingsView from '@/views/settings/ProfileSettingsView.vue';
@@ -26,12 +24,10 @@ const modalVisible = computed({
 });
 
 const menuItems = [
-  { key: 'theme', label: '主题管理', icon: 'ri-palette-line', component: ThemeSettingsView },
-  { key: 'template', label: '模板管理', icon: 'ri-file-list-2-line', component: TemplateSettingsView },
-  { key: 'skill', label: '技能管理', icon: 'ri-git-branch-line', component: SkillSettingsView },
-  { key: 'rule', label: '规则管理', icon: 'ri-rules-line', component: RuleSettingsView },
-  { key: 'model', label: '模型管理', icon: 'ri-cpu-line', component: ApiKeySettingsView },
-  { key: 'export', label: '导出管理', icon: 'ri-download-2-line', component: ExportSettingsView },
+  { key: 'theme', label: '主题设置', icon: 'ri-palette-line', component: ThemeSettingsView },
+  { key: 'skill', label: '技能设置', icon: 'ri-git-branch-line', component: SkillSettingsView },
+  { key: 'model', label: '模型设置', icon: 'ri-cpu-line', component: ApiKeySettingsView },
+  { key: 'export', label: '导出设置', icon: 'ri-download-2-line', component: ExportSettingsView },
   { key: 'profile', label: '个性设置', icon: 'ri-user-settings-line', component: ProfileSettingsView },
   { key: 'about', label: '关于', icon: 'ri-information-line', component: AboutSettingsView },
 ];
@@ -58,6 +54,8 @@ function selectTab(key: string) {
     subtitle="选择要进入的设置界面"
     icon="ri-settings-3-line"
     width="92vw"
+    :max-width="1400"
+    height="92vh"
     :show-footer="false"
     :close-on-click-overlay="false"
   >
@@ -85,9 +83,9 @@ function selectTab(key: string) {
 .settings-body {
   display: flex;
   gap: 20px;
-  height: calc(90vh - 130px);
-  min-height: 480px;
-  max-height: 900px;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
 }
 
 .nav-list {
@@ -121,9 +119,11 @@ function selectTab(key: string) {
 
 .nav-item .icon {
   color: var(--color-text-body, #3A3A3A);
+  width: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: color 0.2s ease;
 }
 
 .nav-item .label {

@@ -124,10 +124,10 @@ function resetAll() {
             <span class="sep">/</span>
             <span>设置中心</span>
             <span class="sep">/</span>
-            <span class="current">主题管理</span>
+            <span class="current">主题设置</span>
           </div>
           <div class="header-title">
-            <h1>主题管理</h1>
+            <h1>主题设置</h1>
             <p>统一切换外观底色、强调色与导航布局模式，修改即时生效</p>
           </div>
         </div>

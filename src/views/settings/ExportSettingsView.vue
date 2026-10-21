@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from 'vue';
 import { ElMessage } from '@/utils/toast';
 import { getExportSettings, setExportSettings } from '@/api/settings';
 import { UiSwitch, UiSelectCard } from '@/components/ui';
+import { BRAND_NAME } from '@/constants/brand';
 
 interface ExportItem {
   key: string;
@@ -13,16 +14,29 @@ interface ExportItem {
 }
 
 const formats: ExportItem[] = [
-  { key: 'markdown', name: 'Markdown ·.md', desc: '轻盈纯文本，便于二次编辑与粘贴至团队 Wiki', iconText: 'MD', iconColor: '#3A4A63' },
-  { key: 'json', name: 'JSON 数据 ·.json', desc: '结构化原始数据，便于程序处理与二次开发', iconText: '{}', iconColor: '#4E9B7A' },
+  { key: 'docx', name: 'Word 文档 ·.docx', desc: '保留可编辑正文，商用文库首选', iconText: 'W', iconColor: '#2B579A' },
+  { key: 'pdf', name: 'PDF 文档 ·.pdf', desc: '矢量高清，适用于打印与送审', iconText: 'PDF', iconColor: '#C0392B' },
+  { key: 'markdown', name: 'Markdown ·.md', desc: '轻盈纯文本，便于二次编辑', iconText: 'MD', iconColor: '#3A4A63' },
 ];
+
+const wordSettings = ref({
+  preserveTemplate: true,
+  autoTable: true,
+  embedFont: false,
+});
+
+const pdfSettings = ref({
+  vectorHD: true,
+  keepBookmarks: true,
+  addWatermark: false,
+});
 
 const mdSettings = ref({
   preserveTable: true,
   downgradeTitle: false,
 });
 
-const selectedFormat = ref('markdown');
+const selectedFormat = ref('docx');
 
 let ready = false;
 const num = (v: boolean) => (v ? 1 : 0);
@@ -32,6 +46,12 @@ async function persist() {
   try {
     await setExportSettings({
       format: selectedFormat.value,
+      word_keep_style: num(wordSettings.value.preserveTemplate),
+      word_toc: num(wordSettings.value.autoTable),
+      word_embed_font: num(wordSettings.value.embedFont),
+      pdf_high_res: num(pdfSettings.value.vectorHD),
+      pdf_bookmarks: num(pdfSettings.value.keepBookmarks),
+      pdf_watermark: num(pdfSettings.value.addWatermark),
       md_keep_tables: num(mdSettings.value.preserveTable),
       md_demote_heading: num(mdSettings.value.downgradeTitle),
     });
@@ -41,7 +61,17 @@ async function persist() {
 }
 
 function applyLoaded(s: Record<string, any>) {
-  selectedFormat.value = s.format || 'markdown';
+  selectedFormat.value = s.format || 'docx';
+  wordSettings.value = {
+    preserveTemplate: (s.word_keep_style ?? 1) === 1,
+    autoTable: (s.word_toc ?? 1) === 1,
+    embedFont: (s.word_embed_font ?? 0) === 1,
+  };
+  pdfSettings.value = {
+    vectorHD: (s.pdf_high_res ?? 1) === 1,
+    keepBookmarks: (s.pdf_bookmarks ?? 1) === 1,
+    addWatermark: (s.pdf_watermark ?? 0) === 1,
+  };
   mdSettings.value = {
     preserveTable: (s.md_keep_tables ?? 1) === 1,
     downgradeTitle: (s.md_demote_heading ?? 0) === 1,
@@ -58,13 +88,14 @@ onMounted(async () => {
   }
 });
 
-watch([selectedFormat, mdSettings], persist, { deep: true });
+watch([selectedFormat, wordSettings, pdfSettings, mdSettings], persist, { deep: true });
 
 async function resetAll() {
   applyLoaded({
-    format: 'markdown',
-    md_keep_tables: 1,
-    md_demote_heading: 0,
+    format: 'docx',
+    word_keep_style: 1, word_toc: 1, word_embed_font: 0,
+    pdf_high_res: 1, pdf_bookmarks: 1, pdf_watermark: 0,
+    md_keep_tables: 1, md_demote_heading: 0,
   });
   ready = true;
   await persist();
@@ -83,11 +114,11 @@ async function resetAll() {
             <span class="sep">/</span>
             <span>设置中心</span>
             <span class="sep">/</span>
-            <span class="current">导出管理</span>
+            <span class="current">导出设置</span>
           </div>
           <div class="header-title">
-            <h1>导出管理</h1>
-            <p>配置导出格式与输出规格，检查完成后点击下载结果</p>
+            <h1>导出设置</h1>
+            <p>配置 Word、PDF、Markdown 三类成品的输出规格与默认行为</p>
           </div>
         </div>
         <button class="reset-button" @click="resetAll">
@@ -114,8 +145,60 @@ async function resetAll() {
       </div>
     </div>
 
+    <!-- Word 导出设置 -->
+    <div class="section-card">
+      <div class="card-title">Word 导出设置</div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-name">保留原始模板样式</div>
+          <div class="setting-desc">导出时沿用模板的页眉页脚与标题层级</div>
+        </div>
+        <UiSwitch v-model="wordSettings.preserveTemplate" />
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-name">自动生成目录与页码</div>
+          <div class="setting-desc">按二级标题生成可跳转目录并标注页码</div>
+        </div>
+        <UiSwitch v-model="wordSettings.autoTable" />
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-name">嵌入正文所用字体</div>
+          <div class="setting-desc">避免他人电脑打开时出现字体替换</div>
+        </div>
+        <UiSwitch v-model="wordSettings.embedFont" />
+      </div>
+    </div>
+
+    <!-- PDF 导出设置 -->
+    <div class="section-card">
+      <div class="card-title">PDF 导出设置</div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-name">矢量高清输出 300dpi</div>
+          <div class="setting-desc">文字与图片均不压缩，适合打印装订后送审</div>
+        </div>
+        <UiSwitch v-model="pdfSettings.vectorHD" />
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-name">保留书签导航树</div>
+          <div class="setting-desc">按章节层级生成左侧书签，评委可快速跳转</div>
+        </div>
+        <UiSwitch v-model="pdfSettings.keepBookmarks" />
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-name">添加内部稿水印</div>
+          <div class="setting-desc">叠加「{{ BRAND_NAME }} · 内部稿」对角淡色水印</div>
+        </div>
+        <UiSwitch v-model="pdfSettings.addWatermark" />
+      </div>
+    </div>
+
     <!-- Markdown 导出设置 -->
-    <div v-if="selectedFormat === 'markdown'" class="section-card">
+    <div class="section-card">
       <div class="card-title">Markdown 导出设置</div>
       <div class="setting-item">
         <div class="setting-info">
