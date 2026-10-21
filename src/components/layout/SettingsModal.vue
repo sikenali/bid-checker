@@ -83,7 +83,7 @@ function selectTab(key: string) {
 .settings-body {
   display: flex;
   gap: 20px;
-  height: 100%;
+  flex: 1;
   min-height: 0;
   padding: 0;
 }

@@ -9,7 +9,7 @@
  *   <UiInput v-model="name" placeholder="请输入" />
  * </UiModal>
  */
-import { watch, onMounted, onUnmounted } from 'vue';
+import { computed, watch, onMounted, onUnmounted } from 'vue';
 import { riToCompName } from '@/utils/icon';
 
 const props = withDefaults(defineProps<{
@@ -20,6 +20,10 @@ const props = withDefaults(defineProps<{
   icon?: string;
   /** 面板宽度（px 数字或 css 字符串），默认 560 */
   width?: number | string;
+  /** 面板最大宽度（px 数字或 css 字符串），默认 600 */
+  maxWidth?: number | string;
+  /** 面板最大高度（css 字符串），默认 calc(100vh - 40px)，内容不足时自动收缩 */
+  height?: string;
   /** 点击遮罩关闭 */
   closeOnClickOverlay?: boolean;
   /** ESC 关闭 */
@@ -38,6 +42,8 @@ const props = withDefaults(defineProps<{
   subtitle: '',
   icon: 'ri-file-edit-line',
   width: 560,
+  maxWidth: 600,
+  height: 'calc(100vh - 40px)',
   closeOnClickOverlay: true,
   closeOnEsc: true,
   showClose: true,
@@ -54,6 +60,9 @@ const emit = defineEmits<{
   (e: 'confirm'): void;
   (e: 'cancel'): void;
 }>();
+
+const panelWidth = computed(() => typeof props.width === 'number' ? props.width + 'px' : props.width);
+const panelMaxWidth = computed(() => typeof props.maxWidth === 'number' ? props.maxWidth + 'px' : props.maxWidth);
 
 function close() {
   emit('update:modelValue', false);
@@ -88,7 +97,11 @@ onUnmounted(() => { if (props.modelValue) lockScroll(false); });
       <div v-if="modelValue" class="ui-modal-overlay" @click.self="closeOnClickOverlay && close()">
         <div
           class="ui-modal-panel"
-          :style="{ width: typeof width === 'number' ? width + 'px' : width }"
+          :style="{
+            width: panelWidth,
+            maxWidth: panelMaxWidth,
+            maxHeight: props.height,
+          }"
           role="dialog"
           aria-modal="true"
         >
@@ -152,8 +165,6 @@ onUnmounted(() => { if (props.modelValue) lockScroll(false); });
   padding: 24px;
 }
 .ui-modal-panel {
-  max-width: calc(100vw - 48px);
-  max-height: 90vh;
   background: var(--color-bg-white, #FFFFFF);
   border-radius: 16px;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.1);
