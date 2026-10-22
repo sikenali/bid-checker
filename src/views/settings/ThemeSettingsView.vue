@@ -46,7 +46,7 @@ interface AccentOption {
 }
 
 const accents: AccentOption[] = [
-  { key: 'vermilion', name: '朱红 · 默认', color: '#BE3B2E', varName: '--color-primary' },
+  { key: 'vermilion', name: '朱红 · 默认', color: '#C0392B', varName: '--color-primary' },
   { key: 'gold', name: '鎏金', color: '#D3A93F', varName: '--color-accent-gold' },
   { key: 'jade', name: '玉绿', color: '#3E8C6E', varName: '--color-accent-jade' },
   { key: 'cloud', name: '云蓝', color: '#4A72A8', varName: '--color-accent-cloud' },
@@ -107,7 +107,7 @@ function resetAll() {
   themeStore.setTheme('parchment');
   saveTheme('parchment').catch(() => {});
   localStorage.setItem('accent', 'vermilion');
-  themeStore.applyAccent('#BE3B2E');
+  themeStore.applyAccent('#C0392B');
   localStorage.setItem('layout', 'topbar');
   ElMessage.success('已恢复默认');
 }
@@ -202,11 +202,11 @@ function resetAll() {
                     <span class="brand-text muted"></span>
                   </div>
                   <div class="mockup-modules">
-                    <span class="module-block" style="background:#BE3B2E"></span>
+                    <span class="module-block" style="background:#C0392B"></span>
                     <span class="module-block" style="background:#D3A93F"></span>
                     <span class="module-block" style="background:#3E8C6E"></span>
                     <span class="module-block" style="background:#4A72A8"></span>
-                    <span class="module-block" style="background:#BE3B2E"></span>
+                    <span class="module-block" style="background:#C0392B"></span>
                     <span class="module-block" style="background:#D3A93F"></span>
                   </div>
                   <div class="mockup-actions">
@@ -224,7 +224,7 @@ function resetAll() {
               <div class="preview-mockup sidebar-mockup">
                 <div class="mockup-sidebar">
                   <span class="sidebar-mod" style="background:#D3A93F"></span>
-                  <span class="sidebar-mod" style="background:#BE3B2E"></span>
+                    <span class="sidebar-mod" style="background:#C0392B"></span>
                   <span class="sidebar-mod" style="background:#3E8C6E"></span>
                   <span class="sidebar-mod" style="background:#4A72A8"></span>
                   <span class="sidebar-mod" style="background:#2F3640"></span>
@@ -515,7 +515,7 @@ function resetAll() {
   width: 11px;
   height: 10px;
   border-radius: 50%;
-  background-color: #BE3B2E;
+  background-color: #C0392B;
 }
 .brand-text {
   width: 25px;

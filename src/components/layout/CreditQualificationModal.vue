@@ -84,7 +84,7 @@ const creditSites = [
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: var(--z-modal, 1050);
 }
 
 .settings-panel {
@@ -277,7 +277,7 @@ const creditSites = [
   justify-content: center;
   padding-top: 6px;
   margin-top: 4px;
-  border-top: 1px solid var(--color-border-soft, #EDE9E0);
+  border-top: 0.7px solid var(--color-border-soft, #EDE9E0);
 }
 
 .site-link {
@@ -307,7 +307,7 @@ const creditSites = [
   align-items: center;
   justify-content: space-between;
   padding-top: 16px;
-  border-top: 1px solid var(--color-bg-secondary, #F7F3EA);
+  border-top: 0.7px solid var(--color-bg-secondary, #F7F3EA);
 }
 
 .footer-count {

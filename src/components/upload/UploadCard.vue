@@ -361,8 +361,8 @@ function handleReplace(side: 'left' | 'right') {
   position: absolute;
   top: 12px;
   right: 12px;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 0.7px solid var(--color-border, #E5DFD3);
   background-color: var(--color-bg-white, #FFFFFF);

@@ -309,8 +309,8 @@ const statusColors: Record<string, string> = {
         <Pagination
           :total="filteredItems.length"
           :page-size="PAGE_SIZE"
-          :current-page="currentPage"
-          @update:current-page="currentPage = $event"
+          :current="currentPage"
+          @update:current="currentPage = $event"
         />
       </main>
     </div>
@@ -516,7 +516,7 @@ const statusColors: Record<string, string> = {
 .stat-warning .stat-num { color: var(--color-warning, #F39C12); }
 .stat-risk .stat-num { color: var(--color-error, #C0392B); }
 .stat-label {
-  font-size: 16px;
+  font-size: 14px;
   color: var(--color-text-secondary, #6E6A60);
   font-family: "SourceHanSans-Regular", var(--font-family-cn);
 }

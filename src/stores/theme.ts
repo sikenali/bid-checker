@@ -46,7 +46,7 @@ const themeTokens: Record<ThemeType, Record<string, string>> = {
     '--color-text-muted': '#A7AEB9',
     '--color-text-faint': '#86909C',
     '--color-border': '#2A2B2E',
-    '--color-border-soft': '#2A2B2E',
+    '--color-border-soft': '#333437',
     '--color-border-hover': '#3A3B3F',
     '--color-success': '#5CB98C',
     '--color-success-strong': '#7BC8A4',

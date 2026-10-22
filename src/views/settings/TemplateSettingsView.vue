@@ -499,7 +499,7 @@ onMounted(() => {
 }
 .grid-card-title { font-size: 17px; font-weight: 500; color: var(--color-text-primary, #1F1D1A); font-family: "SourceHanSans-Medium", var(--font-family-cn); margin: 0; }
 .grid-card-desc { font-size: 14px; color: var(--color-text-secondary, #6E6A60); font-family: "SourceHanSans-Regular", var(--font-family-cn); flex: 1; }
-.grid-card-footer { padding: 16px 24px; border-top: 1px solid var(--color-border-soft, #EDE9E0); display: flex; justify-content: flex-end; }
+.grid-card-footer { padding: 16px 24px; border-top: 0.7px solid var(--color-border-soft, #EDE9E0); display: flex; justify-content: flex-end; }
 .grid-card-actions { display: flex; align-items: center; gap: 12px; }
 .grid-card-actions .action-btn {
   font-size: 14px; font-family: "SourceHanSans-Regular", var(--font-family-cn);

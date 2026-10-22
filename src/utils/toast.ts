@@ -81,7 +81,7 @@ export const ElMessageBox = {
         <div style="font-size:14px;color:var(--color-text-body, #3A3A3A);line-height:1.6;margin-bottom:24px;">${message}</div>
         <div style="display:flex;gap:12px;justify-content:flex-end;">
           <button id="__cancel_btn" style="padding:8px 20px;border:1px solid var(--color-border, #E5DFD3);background:var(--color-bg-white, #fff);color:var(--color-text-body, #3A3A3A);border-radius:8px;font-size:14px;cursor:pointer;">取消</button>
-          <button id="__confirm_btn" style="padding:8px 20px;border:none;background:var(--color-primary, #BE3B2E);color:#fff;border-radius:8px;font-size:14px;cursor:pointer;">确认</button>
+          <button id="__confirm_btn" style="padding:8px 20px;border:none;background:var(--color-primary, #C0392B);color:#fff;border-radius:8px;font-size:14px;cursor:pointer;">确认</button>
         </div>`;
       overlay.appendChild(box);
       document.body.appendChild(overlay);

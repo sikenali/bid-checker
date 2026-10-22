@@ -742,7 +742,7 @@ onMounted(loadSkills);
 .rule-table td {
   padding: 8px 12px;
   font-size: 12px;
-  border-bottom: 1px solid var(--color-border-soft, #EDE9E0);
+  border-bottom: 0.7px solid var(--color-border-soft, #EDE9E0);
 }
 .rule-table th:first-child,
 .rule-table td:first-child { width: 25%; }
@@ -812,7 +812,7 @@ onMounted(loadSkills);
   font-family: "SourceHanSans-Regular", var(--font-family-cn); flex: 1;
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
 }
-.grid-card-footer { padding: 16px 24px; border-top: 1px solid var(--color-border-soft, #EDE9E0); display: flex; justify-content: flex-end; }
+.grid-card-footer { padding: 16px 24px;   border-top: 0.7px solid var(--color-border-soft, #EDE9E0); display: flex; justify-content: flex-end; }
 .grid-card-actions { display: flex; align-items: center; gap: 12px; }
 .grid-card-actions .action-btn {
   font-size: 14px; font-family: "SourceHanSans-Regular", var(--font-family-cn);

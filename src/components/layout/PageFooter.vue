@@ -44,7 +44,7 @@ onMounted(() => { year.value = new Date().getFullYear() })
   justify-content: space-between;
   gap: 24px;
   background: linear-gradient(180deg, var(--color-bg-white, #FFFFFF) 0%, var(--color-bg-secondary, #F7F3EA) 100%);
-  border-top: 1px solid var(--color-border-soft, #EDE9E0);
+  border-top: 0.7px solid var(--color-border-soft, #EDE9E0);
 }
 
 /* 左侧 logo + 文字 */

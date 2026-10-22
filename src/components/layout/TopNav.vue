@@ -94,8 +94,8 @@ const showSettingsModal = ref(false);
   gap: 12px;
 }
 .nav-btn {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: none;
   background-color: var(--color-bg-white, #FFFFFF);

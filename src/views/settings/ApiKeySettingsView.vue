@@ -503,7 +503,7 @@ onMounted(loadKeys);
 .saved-keys {
   margin-top: 24px;
   padding-top: 24px;
-  border-top: 1px solid var(--color-border-soft, #EDE9E0);
+  border-top: 0.7px solid var(--color-border-soft, #EDE9E0);
   display: flex;
   flex-direction: column;
   gap: 8px;

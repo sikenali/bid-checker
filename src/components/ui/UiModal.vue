@@ -205,7 +205,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: var(--z-modal, 1050);
   padding: 24px;
 }
 .ui-modal-panel {
@@ -299,7 +299,7 @@ onUnmounted(() => {
   gap: 12px;
   padding-top: 20px;
   margin-top: 4px;
-  border-top: 1px solid var(--color-bg-secondary, #F7F3EA);
+  border-top: 0.7px solid var(--color-bg-secondary, #F7F3EA);
 }
 .ui-modal-footer-hint:empty { display: none; }
 .ui-modal-footer-btns {

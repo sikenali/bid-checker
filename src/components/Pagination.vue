@@ -6,8 +6,8 @@
  * <Pagination
  *   :total="filteredItems.length"
  *   :page-size="PAGE_SIZE"
- *   :current-page="currentPage"
- *   @update:current-page="currentPage = $event"
+ *   :current="currentPage"
+ *   @update:current="currentPage = $event"
  * />
  */
 const props = withDefaults(defineProps<{
@@ -16,17 +16,17 @@ const props = withDefaults(defineProps<{
   /** 每页条数，默认 10 */
   pageSize?: number;
   /** 当前页码（从 1 开始） */
-  currentPage?: number;
+  current?: number;
   /** 最多显示多少个页码按钮，默认 7 */
   maxVisible?: number;
 }>(), {
   pageSize: 10,
-  currentPage: 1,
+  current: 1,
   maxVisible: 7,
 });
 
 const emit = defineEmits<{
-  (e: 'update:currentPage', page: number): void;
+  (e: 'update:current', page: number): void;
 }>();
 
 import { computed } from 'vue';
@@ -35,12 +35,12 @@ const totalPages = computed(() => Math.max(1, Math.ceil(props.total / props.page
 
 function goToPage(page: number) {
   if (page < 1 || page > totalPages.value) return;
-  emit('update:currentPage', page);
+  emit('update:current', page);
 }
 
 const visiblePages = computed(() => {
   const total = totalPages.value;
-  const current = props.currentPage;
+  const current = props.current;
   const max = props.maxVisible;
   if (total <= max) {
     return Array.from({ length: total }, (_, i) => i + 1);
@@ -55,22 +55,22 @@ const visiblePages = computed(() => {
 <template>
   <div v-if="totalPages > 1" class="pagination">
     <span class="page-info">
-      共 {{ total }} 条 · 每页 {{ pageSize }} 条 · 第 {{ currentPage }} / {{ totalPages }} 页
+      共 {{ total }} 条 · 每页 {{ pageSize }} 条 · 第 {{ current }} / {{ totalPages }} 页
     </span>
     <div class="page-controls">
-      <button class="page-btn" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">
+      <button class="page-btn" :disabled="current <= 1" @click="goToPage(current - 1)">
         <RiArrowLeftSLine class="icon" />
       </button>
       <button
         v-for="p in visiblePages"
         :key="p"
         class="page-btn"
-        :class="{ active: currentPage === p }"
+        :class="{ active: current === p }"
         @click="goToPage(p)"
       >
         {{ p }}
       </button>
-      <button class="page-btn" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">
+      <button class="page-btn" :disabled="current >= totalPages" @click="goToPage(current + 1)">
         <RiArrowRightSLine class="icon" />
       </button>
     </div>
