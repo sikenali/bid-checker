@@ -8,3 +8,4 @@ backend/data/*.db-shm
 backend/data/*.db-wal
 backend/data/uploads/
 backend/data/.enc_key
+vite.config.ts.timestamp-*.mjs
