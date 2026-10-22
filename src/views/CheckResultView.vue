@@ -336,14 +336,13 @@ const statusColors: Record<string, string> = {
 
 /* ── 左侧分类侧栏 ──────────────────────────────────────── */
 .sidebar {
-  width: 300px;
+  width: 310px;
   flex-shrink: 0;
   background: var(--color-bg-white, #FFFFFF);
   border-right: 0.7px solid var(--color-border-soft, #EDE9E0);
+  padding: 24px 20px;
   display: flex;
   flex-direction: column;
-  padding: 24px 20px;
-  gap: 20px;
   overflow-y: auto;
 }
 .sidebar-title {
@@ -361,15 +360,15 @@ const statusColors: Record<string, string> = {
   display: flex;
   align-items: center;
   gap: 12px;
-  height: 52px;
-  padding: 0 16px;
+  height: 50px;
+  padding: 0 20px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-md, 10px);
   background: transparent;
   cursor: pointer;
   text-align: left;
   width: 100%;
-  transition: background 0.2s;
+  transition: background-color var(--transition-base);
 }
 .category-btn:hover {
   background: var(--color-bg-secondary, #F7F3EA);
@@ -385,12 +384,13 @@ const statusColors: Record<string, string> = {
 }
 .cat-label {
   font-size: 16px;
+  font-weight: 400;
   font-family: "SourceHanSans-Regular", var(--font-family-cn);
   color: var(--color-text-body, #3A3A3A);
   line-height: 1.2;
 }
 .category-btn.active .cat-label {
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-primary, #C0392B);
 }
 

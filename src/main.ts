@@ -37,6 +37,7 @@ import {
   RiSettings3Line,
   RiShieldCheckLine,
   RiTargetLine,
+  RiTodoLine,
   RiUploadCloud2Line,
   RiUserSettingsLine,
 } from '@remixicon/vue';
@@ -89,6 +90,7 @@ const icons = {
   RiSettings3Line,
   RiShieldCheckLine,
   RiTargetLine,
+  RiTodoLine,
   RiUploadCloud2Line,
   RiUserSettingsLine,
 };

@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import SettingsModal from '@/components/layout/SettingsModal.vue';
 import { UiTip } from '@/components/ui';
-import { BRAND_NAME } from '@/constants/brand';
+import { BRAND_NAME, BRAND_PRODUCT } from '@/constants/brand';
 
 const props = withDefaults(defineProps<{
   title?: string;
@@ -21,11 +21,11 @@ const showSettingsModal = ref(false);
   <header class="top-nav">
     <div class="nav-left" @click="router.push('/')">
       <div class="tool-mark">
-        <RiTargetLine size="26" color="var(--color-primary, #C0392B)" />
+        <RiTodoLine size="26" class="tool-logo" />
       </div>
       <span class="brand-cn">{{ brand || BRAND_NAME }}</span>
       <span class="divider"></span>
-      <span class="page-title">{{ title || '' }}</span>
+      <span class="page-title">{{ title || BRAND_PRODUCT }}</span>
     </div>
     <div class="nav-right">
       <UiTip v-if="showBack" text="返回" placement="bottom">
@@ -68,7 +68,7 @@ const showSettingsModal = ref(false);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-primary, #C0392B);
+  color: var(--brand-green, var(--color-primary, #3E8C6E));
 }
 .brand-cn {
   font-size: 20px;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import TopNav from '@/components/layout/TopNav.vue';
 import PageFooter from '@/components/layout/PageFooter.vue';
@@ -8,6 +8,7 @@ import StepStrip from '@/components/StepStrip.vue';
 import CreditQualificationModal from '@/components/layout/CreditQualificationModal.vue';
 import BiddingSitesModal from '@/components/layout/BiddingSitesModal.vue';
 import { runCheck, buildCheckResult } from '@/api/check';
+import { ElMessage } from '@/utils/toast';
 
 const router = useRouter();
 const showCreditModal = ref(false);
@@ -16,8 +17,6 @@ const showBiddingModal = ref(false);
 // ── 文件信息（仅本地选择，上传由 StepStrip 按钮统一触发）─────────
 const leftFileInfo = ref<FileInfo>({ file: null, name: '', size: '', type: '' });
 const rightFileInfo = ref<FileInfo>({ file: null, name: '', size: '', type: '' });
-
-const bothReady = computed(() => !!leftFileInfo.value.file && !!rightFileInfo.value.file);
 
 // ── 检查状态 ─────────────────────────────────────────────
 const checking = ref(false);
@@ -49,7 +48,11 @@ const steps = [
 // ── 开始智能检查：是否走 LLM 增强由后端判定 ──────────────────────
 // 前端不再读取技能列表、不传 skill_id；后端若已配置模型与启用技能则自动智能增强
 async function handleCheck() {
-  if (!leftFileInfo.value.file || !rightFileInfo.value.file || checking.value) return;
+  if (!leftFileInfo.value.file || !rightFileInfo.value.file) {
+    ElMessage.warning('请先上传文件');
+    return;
+  }
+  if (checking.value) return;
 
   checking.value = true;
   stepStripDone = false;
@@ -101,7 +104,6 @@ function handleReplace() {}
           :steps="steps"
           :loading="checking"
           button-label="一键检查"
-          :disabled="!bothReady"
           @extract="handleCheck"
           @finished="onStepStripFinished"
         />

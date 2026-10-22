@@ -283,8 +283,8 @@ function handleReplace(side: 'left' | 'right') {
 }
 
 .upload-card {
-  width: 520px;
-  height: 420px;
+  width: 420px;
+  height: 345px;
   flex-shrink: 0;
   background-color: var(--color-bg-white, #FFFFFF);
   border: 0.7px solid var(--color-border, #E5DFD3);
@@ -297,7 +297,7 @@ function handleReplace(side: 'left' | 'right') {
   position: relative;
   overflow: hidden;
   gap: 24px;
-  padding: 48px 36px;
+  padding: 40px 32px;
   cursor: pointer;
 }
 
@@ -311,8 +311,8 @@ function handleReplace(side: 'left' | 'right') {
 }
 
 .upload-icon-wrap {
-  width: 96px;
-  height: 96px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   background-color: var(--color-bg-secondary, #F7F3EA);
   display: flex;
@@ -443,7 +443,7 @@ function handleReplace(side: 'left' | 'right') {
 
 .card-label {
   position: absolute;
-  bottom: 14px;
+  bottom: 12px;
   left: 0;
   right: 0;
   text-align: center;
